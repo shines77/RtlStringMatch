@@ -13,6 +13,7 @@ Environment:
 #include "Support.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <memory.h>
 #include <assert.h>
 
 ///////////////////////////////////////////////////////////////////////////
