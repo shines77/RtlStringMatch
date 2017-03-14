@@ -331,6 +331,18 @@ RtlCopyUnicodeStringFromChar(
 
 ////////////////////////////////////////////////////////////////////////
 
+char * __stdcall my_strstr(
+    const char * str1,
+    const char * str2
+    );
+
+wchar_t * __stdcall my_wcsstr(
+    const wchar_t * str1,
+    const wchar_t * str2
+    );
+
+////////////////////////////////////////////////////////////////////////
+
 VOID
 NTAPI
 RtlUnicodeAssert(

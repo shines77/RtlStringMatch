@@ -273,6 +273,8 @@ Cleanup:
     return Status;
 }
 
+#define USE_MALLOC_AND_UPDOWN_CASE   0
+
 ///////////////////////////////////////////////////////////////////////////
 //
 // Rtl: The routine of find search string in match string.
@@ -298,6 +300,11 @@ RtlUnicodeCharIndexOf(
     PWCHAR MatchStringStart, MatchStringEnd;
     PWCHAR SaveSearchString, SaveMatchString;
     WCHAR SearchChar, MatchChar;
+#if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
+    PWCHAR NewSearchString = NULL, NewMatchString = NULL;
+    PWCHAR Dest, Source;
+    ULONG i;
+#endif
 
     RTL_PAGED_CODE();
 
@@ -324,6 +331,26 @@ RtlUnicodeCharIndexOf(
 
     FLT_ASSERT(MatchLength >= SearchLength);
     if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+#if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
+        if (CaseInSensitive) {
+            NewMatchString = (PWCHAR)malloc((MatchLength + 1) * sizeof(WCHAR));
+            Dest   = NewMatchString;
+            Source = MatchString;
+            for (i = 0; i < MatchLength; ++i) {
+                *Dest++ = __InlineDowncaseUnicodeChar(*Source++);
+            }
+            *Dest = UNICODE_NULL;
+            NewSearchString = (PWCHAR)malloc((SearchLength + 1) * sizeof(WCHAR));
+            Dest   = NewSearchString;
+            Source = SearchString;
+            for (i = 0; i < SearchLength; ++i) {
+                *Dest++ = __InlineDowncaseUnicodeChar(*Source++);
+            }
+            *Dest = UNICODE_NULL;
+            MatchString  = NewMatchString;
+            SearchString = NewSearchString;
+        }
+#endif // USE_MALLOC_AND_UPDOWN_CASE
         if (IsReversiSearch) {
             // Reverse search
             SaveSearchString = SearchString;
@@ -335,10 +362,12 @@ RtlUnicodeCharIndexOf(
             do {
                 MatchChar  = *MatchString;
                 SearchChar = *SearchString;
+#if !defined(USE_MALLOC_AND_UPDOWN_CASE) || (USE_MALLOC_AND_UPDOWN_CASE == 0)
                 if (CaseInSensitive) {
                     MatchChar  = __InlineDowncaseUnicodeChar(MatchChar);
                     SearchChar = __InlineDowncaseUnicodeChar(SearchChar);
                 }
+#endif // !USE_MALLOC_AND_UPDOWN_CASE
                 if (MatchChar != SearchChar) {
                     MatchStringStart--;
                     if (MatchStringStart < MatchStringEnd) {
@@ -372,10 +401,12 @@ RtlUnicodeCharIndexOf(
             do {
                 MatchChar  = *MatchString;
                 SearchChar = *SearchString;
+#if !defined(USE_MALLOC_AND_UPDOWN_CASE) || (USE_MALLOC_AND_UPDOWN_CASE == 0)
                 if (CaseInSensitive) {
                     MatchChar  = __InlineDowncaseUnicodeChar(MatchChar);
                     SearchChar = __InlineDowncaseUnicodeChar(SearchChar);
                 }
+#endif // !USE_MALLOC_AND_UPDOWN_CASE
                 if (MatchChar != SearchChar) {
                     MatchStringStart++;
                     if (MatchStringStart > MatchStringEnd) {
@@ -406,6 +437,16 @@ RtlUnicodeCharIndexOf(
     }
 
 Cleanup:
+#if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
+    if (CaseInSensitive) {
+        if (NewMatchString != NULL) {
+            free(NewMatchString);
+        }
+        if (NewSearchString != NULL) {
+            free(NewSearchString);
+        }
+    }
+#endif
     return Status;
 }
 
@@ -539,6 +580,92 @@ RtlCopyUnicodeStringFromChar(
             DestString->Buffer[SourceLength / sizeof(WCHAR)] = UNICODE_NULL;
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+
+/***
+* strstr.c - search for one string inside another
+*
+*       Copyright (c) Microsoft Corporation. All rights reserved.
+*
+* Purpose:
+*       defines strstr() - search for one string inside another
+*
+*******************************************************************************/
+
+/***
+* char *strstr(string1, string2) - search for string2 in string1
+*
+* Purpose:
+*       finds the first occurrence of string2 in string1
+*
+* Entry:
+*       char *string1 - string to search in
+*       char *string2 - string to search for
+*
+* Exit:
+*       returns a pointer to the first occurrence of string2 in
+*       string1, or NULL if string2 does not occur in string1
+*
+* Uses:
+*
+*       Exceptions:
+*
+*******************************************************************************/
+ 
+char * __stdcall my_strstr(
+    const char * str1,
+    const char * str2
+    )
+{
+    char * cp = (char *)str1;
+    char * s1, * s2;
+
+    if (!*str2)
+        return((char *)str1);
+
+    while (*cp) {
+        s1 = cp;
+        s2 = (char *)str2;
+
+        while (*s1 && *s2 && !(*s1 - *s2))
+            s1++, s2++;
+
+        if (!*s2)
+            return (cp);
+
+        cp++;
+    }
+
+    return (NULL);
+}
+
+wchar_t * __stdcall my_wcsstr(
+    const wchar_t * str1,
+    const wchar_t * str2
+    )
+{
+    wchar_t * cp = (wchar_t *)str1;
+    wchar_t * s1, * s2;
+
+    if (!*str2)
+        return((wchar_t *)str1);
+
+    while (*cp) {
+        s1 = cp;
+        s2 = (wchar_t *)str2;
+
+        while (*s1 && *s2 && !(*s1 - *s2))
+            s1++, s2++;
+
+        if (!*s2)
+            return (cp);
+
+        cp++;
+    }
+
+    return (NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////
