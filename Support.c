@@ -524,7 +524,7 @@ RtlCopyUnicodeStringFromChar(
     _In_ CONST WCHAR * SourceString
     )
 {
-    ULONG SourceLength = wcslen(SourceString) * sizeof(WCHAR);
+    ULONG SourceLength = (ULONG)(wcslen(SourceString) * sizeof(WCHAR));
     if (SourceString == NULL) {
         DestString->Length = 0;
     }
