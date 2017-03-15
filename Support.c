@@ -273,7 +273,7 @@ Cleanup:
     return Status;
 }
 
-#define USE_MALLOC_AND_UPDOWN_CASE   1
+#define USE_MALLOC_AND_UPDOWN_CASE   0
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -351,11 +351,11 @@ RtlUnicodeCharIndexOf(
             SearchString = NewSearchString;
         }
 #endif // USE_MALLOC_AND_UPDOWN_CASE
+        SaveSearchString = SearchString;
+        SaveMatchString  = MatchString;
+        SearchStringEnd  = SearchString + SearchLength;
         if (IsReversiSearch) {
             // Reverse search
-            SaveSearchString = SearchString;
-            SaveMatchString  = MatchString;
-            SearchStringEnd  = SearchString + SearchLength;
             MatchStringStart = MatchString + (MatchLength - SearchLength);
             MatchStringEnd   = MatchString;
             MatchString      = MatchStringStart;
@@ -375,8 +375,9 @@ RtlUnicodeCharIndexOf(
                         break;
                     }
                     MatchString = MatchStringStart;
-                    if (SearchString != SaveSearchString)
+                    if (SearchString != SaveSearchString) {
                         SearchString = SaveSearchString;
+                    }
                 }
                 else {
                     MatchString++;
@@ -393,9 +394,6 @@ RtlUnicodeCharIndexOf(
         }
         else {
             // Forward search
-            SaveSearchString = SearchString;
-            SaveMatchString  = MatchString;
-            SearchStringEnd  = SearchString + SearchLength;
             MatchStringStart = MatchString;
             MatchStringEnd   = MatchString + (MatchLength - SearchLength);
             do {
@@ -414,8 +412,9 @@ RtlUnicodeCharIndexOf(
                         break;
                     }
                     MatchString = MatchStringStart;
-                    if (SearchString != SaveSearchString)
+                    if (SearchString != SaveSearchString) {
                         SearchString = SaveSearchString;
+                    }
                 }
                 else {
                     MatchString++;
