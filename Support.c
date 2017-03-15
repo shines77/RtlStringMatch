@@ -273,7 +273,7 @@ Cleanup:
     return Status;
 }
 
-#define USE_MALLOC_AND_UPDOWN_CASE   0
+#define USE_MALLOC_AND_UPDOWN_CASE   1
 
 ///////////////////////////////////////////////////////////////////////////
 //
