@@ -278,7 +278,7 @@ void RtlUnicodeStringIndexOf_KMP2_CaseSensitive_PerformanceTest()
         RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
         RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-        LONG * kmpNext = Prepare_KMP_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
+        LONG * kmpNext = Prepare_KMP2_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
 
         Sum = 0;
         sw.start();
@@ -319,7 +319,7 @@ void RtlUnicodeStringIndexOf_KMP2a_CaseSensitive_PerformanceTest()
         RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
         RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-        LONG * kmpNext = Prepare_KMP_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
+        LONG * kmpNext = Prepare_KMP2_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
 
         Sum = 0;
         sw.start();
@@ -328,6 +328,47 @@ void RtlUnicodeStringIndexOf_KMP2a_CaseSensitive_PerformanceTest()
                                                                  kmpNext,
                                                                  RTL_CASE_SENSITIVE,
                                                                  &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
+        }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
+
+        if (kmpNext != NULL) {
+            RTL_FREE(kmpNext);
+        }
+    }
+
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
+
+void RtlUnicodeStringIndexOf_KMP_CaseSensitive_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    NTSTATUS Status;
+
+    RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
+
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        LONG * kmpNext = Prepare_KMP_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf_KMP_CaseSensitive(&usFullPath, &usSearchName,
+                                                               kmpNext,
+                                                               RTL_CASE_SENSITIVE,
+                                                               &IndexOf);
             noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
                 Sum += IndexOf;
             }
@@ -383,13 +424,19 @@ void UnicodeString_IndexOf_PerformanceTest()
     RtlUnicodeStringIndexOf_ReverseSearch_CaseSensitive_PerformanceTest();
     printf("\n");
 
+    printf("RtlUnicodeStringIndexOf_KMP_CaseSensitive():\n\n");
+    RtlUnicodeStringIndexOf_KMP_CaseSensitive_PerformanceTest();
+    printf("\n");
+
+#if 0
     printf("RtlUnicodeStringIndexOf_KMP2_CaseSensitive():\n\n");
     RtlUnicodeStringIndexOf_KMP2_CaseSensitive_PerformanceTest();
     printf("\n");
 
     printf("RtlUnicodeStringIndexOf_KMP2a_CaseSensitive():\n\n");
     RtlUnicodeStringIndexOf_KMP2a_CaseSensitive_PerformanceTest();
-    printf("\n");    
+    printf("\n");
+#endif
 }
 
 int main(int argc, char * argv[])
@@ -397,6 +444,7 @@ int main(int argc, char * argv[])
 #if defined(_DEBUG) && 0
     LONG * MatchTable = Prepare_KMP_PartialMatchTable(L"ABCDABD", wcslen(L"ABCDABD"));
     LONG * kmpNext = Prepare_KMP_Next(L"ABCDABD", wcslen(L"ABCDABD"));
+    LONG * kmpNext2 = Prepare_KMP2_Next(L"ABCDABD", wcslen(L"ABCDABD"));
 
     if (MatchTable) {
         RTL_FREE(MatchTable);
@@ -404,7 +452,11 @@ int main(int argc, char * argv[])
     if (kmpNext) {
         RTL_FREE(kmpNext);
     }
+    if (kmpNext2) {
+        RTL_FREE(kmpNext2);
+    }
 
+    ::system("pause");
     return 0;
 #endif
 

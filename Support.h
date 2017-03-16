@@ -309,7 +309,7 @@ RtlUnicodeStringIndexOf(
 ////////////////////////////////////////////////////////////////////////
 
 LONG *
-Prepare_KMP_Next(
+Prepare_KMP2_Next(
     _In_ PWCHAR SearchString,
     _In_ ULONG SearchLength
     );
@@ -328,11 +328,9 @@ RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
 
 NTSTATUS
 FIT_NTAPI
-RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
-    _In_ PWCHAR MatchString,
-    _In_ ULONG MatchLength,
-    _In_ PWCHAR SearchString,
-    _In_ ULONG SearchLength,
+RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
@@ -340,9 +338,11 @@ RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
 
 NTSTATUS
 FIT_NTAPI
-RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
-    _In_ PUNICODE_STRING MatchString,
-    _In_ PUNICODE_STRING SearchString,
+RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
@@ -366,6 +366,12 @@ Prepare_KMP_PartialMatchTable(
     _In_ ULONG SearchLength
     );
 
+LONG *
+Prepare_KMP_Next(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    );
+
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP_CaseSensitive(
@@ -373,6 +379,7 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
     _In_ ULONG MatchLength,
     _In_ PWCHAR SearchString,
     _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     );
@@ -382,6 +389,7 @@ FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     );

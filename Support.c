@@ -293,7 +293,7 @@ RtlUnicodeCharIndexOf(
     )
 {
     CONST BOOLEAN CaseInSensitive = (BOOLEAN)((Flags & RTL_CASE_SENSITIVE) == 0);
-    CONST BOOLEAN IsReversiSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    CONST BOOLEAN IsReverseSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR SearchStringEnd;
@@ -354,7 +354,7 @@ RtlUnicodeCharIndexOf(
         SaveSearchString = SearchString;
         SaveMatchString  = MatchString;
         SearchStringEnd  = SearchString + SearchLength;
-        if (IsReversiSearch) {
+        if (IsReverseSearch) {
             // Reverse search
             MatchStringStart = MatchString + (MatchLength - SearchLength);
             MatchStringEnd   = MatchString;
@@ -502,7 +502,7 @@ RtlUnicodeCharIndexOf_CaseSensitive(
     _Inout_ PLONG IndexOf
     )
 {
-    CONST BOOLEAN IsReversiSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    CONST BOOLEAN IsReverseSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR SearchStringEnd;
@@ -538,7 +538,7 @@ RtlUnicodeCharIndexOf_CaseSensitive(
         SaveSearchString = SearchString;
         SaveMatchString  = MatchString;
         SearchStringEnd  = SearchString + SearchLength;
-        if (IsReversiSearch) {
+        if (IsReverseSearch) {
             // Reverse search
             MatchStringStart = MatchString + (MatchLength - SearchLength);
             MatchStringEnd   = MatchString;
@@ -624,7 +624,7 @@ RtlUnicodeStringIndexOf_CaseSensitive(
 ////////////////////////////////////////////////////////////////////////
 
 LONG *
-Prepare_KMP_Next(
+Prepare_KMP2_Next(
     _In_ PWCHAR SearchString,
     _In_ ULONG SearchLength
     )
@@ -656,6 +656,8 @@ Prepare_KMP_Next(
     }
     return kmpNext;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
 FIT_NTAPI
@@ -745,6 +747,23 @@ Cleanup:
 
 NTSTATUS
 FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    return RtlUnicodeCharIndexOf_KMP2_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
+                                                    SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
+                                                    KmpNext, Flags, IndexOf);
+}
+
+////////////////////////////////////////////////////////////////////////
+
+NTSTATUS
+FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -822,21 +841,6 @@ Cleanup:
 
 NTSTATUS
 FIT_NTAPI
-RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
-    _In_ PUNICODE_STRING MatchString,
-    _In_ PUNICODE_STRING SearchString,
-    _In_ LONG * KmpNext,
-    _In_ ULONG Flags,
-    _Inout_ PLONG IndexOf
-    )
-{
-    return RtlUnicodeCharIndexOf_KMP2_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
-                                                    SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
-                                                    KmpNext, Flags, IndexOf);
-}
-
-NTSTATUS
-FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
@@ -859,40 +863,61 @@ Prepare_KMP_PartialMatchTable(
     )
 {
     LONG * MatchTable;
-    ULONG comm_len, max_comm_len;
-    BOOLEAN is_common;
+    ULONG max_comm_len;
+    BOOLEAN is_equal;
     WCHAR * prefix, * suffix;
-    ULONG pre_len, suf_len;
-    ULONG i, j, k;
+    ULONG step_len, cmp_len, i;
     MatchTable = RTL_MALLOC(SearchLength * sizeof(LONG));
     if (MatchTable != NULL) {
         MatchTable[0] = 0;
-        for (i = 2; i <= SearchLength; ++i) {
+        for (step_len = 2; step_len <= SearchLength; ++step_len) {
             max_comm_len = 0;
-            for (j = 1; j <= i; ++j) {
+            for (cmp_len = 1; cmp_len < step_len; ++cmp_len) {
                 prefix = SearchString;
-                pre_len = j;
-                suffix = SearchString + j;
-                suf_len = i - pre_len;
-                is_common = TRUE;
-                comm_len = fit_min(pre_len, suf_len);
-                for (k = 0; k < comm_len; ++k) {
+                suffix = SearchString + step_len - cmp_len;
+                is_equal = TRUE;
+                for (i = 0; i < cmp_len; ++i) {
                     if (*prefix != *suffix) {
-                        is_common = FALSE;
+                        is_equal = FALSE;
                         break;
                     }
                     prefix++;
                     suffix++;
                 }
-                if ((is_common == TRUE) && (comm_len > max_comm_len)) {
-                    max_comm_len = comm_len;
+                if ((is_equal == TRUE) && (cmp_len > max_comm_len)) {
+                    max_comm_len = cmp_len;
                 }
             }
-            MatchTable[i - 1] = max_comm_len;
+            MatchTable[step_len - 1] = max_comm_len;
         }
     }
     return MatchTable;
 }
+
+LONG *
+Prepare_KMP_Next(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    )
+{
+    LONG * KmpNext;
+    ULONG Index;
+    KmpNext = RTL_MALLOC(SearchLength * sizeof(LONG));
+    if (KmpNext != NULL) {
+        KmpNext[0] = 0;
+        for (Index = 1; Index < SearchLength; ++Index) {
+            if (SearchString[Index] == SearchString[KmpNext[Index - 1]]) {
+                KmpNext[Index] = KmpNext[Index - 1] + 1;
+            }
+            else {
+                KmpNext[Index] = 0;
+            }
+        }
+    }
+    return KmpNext;
+}
+
+////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
 FIT_NTAPI
@@ -901,18 +926,19 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
     _In_ ULONG MatchLength,
     _In_ PWCHAR SearchString,
     _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    CONST BOOLEAN IsReversiSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    CONST BOOLEAN IsReverseSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR SearchStringEnd;
     PWCHAR MatchStringStart, MatchStringEnd;
     PWCHAR SaveSearchString, SaveMatchString;
     WCHAR SearchChar, MatchChar;
-    LONG * MatchTable = NULL;
+//    LONG * KmpNext = NULL;
 
     RTL_PAGED_CODE();
 
@@ -939,30 +965,46 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
 
     FLT_ASSERT(MatchLength >= SearchLength);
     if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+#if 0
         // Prepare the partial match table.
-        MatchTable = Prepare_KMP_PartialMatchTable(SearchString, SearchLength);
+        KmpNext = Prepare_KMP_Next(SearchString, SearchLength);
+#endif
 
         // Save the original values.
         SaveSearchString = SearchString;
         SaveMatchString  = MatchString;
         SearchStringEnd  = SearchString + SearchLength;
 
-        if (IsReversiSearch) {
-            // Reverse search
-            MatchStringStart = MatchString + (MatchLength - SearchLength);
-            MatchStringEnd   = MatchString;
-            MatchString      = MatchStringStart;
+        if (!IsReverseSearch || TRUE) {
+            // Forward search
+            MatchStringStart = MatchString;
+            MatchStringEnd   = MatchString + (MatchLength - SearchLength);
             do {
                 MatchChar  = *MatchString;
                 SearchChar = *SearchString;
                 if (MatchChar != SearchChar) {
-                    MatchStringStart--;
-                    if (MatchStringStart < MatchStringEnd) {
-                        Status = STATUS_NOT_FOUND;
-                        break;
+                    if (SearchString == SaveSearchString) {
+                        MatchString++;
+                        MatchStringStart++;
+                        if (MatchStringStart > MatchStringEnd) {
+                            Status = STATUS_NOT_FOUND;
+                            break;
+                        }
                     }
-                    MatchString = MatchStringStart;
-                    SearchString = SaveSearchString;
+                    else {
+                        LONG SearchIndex = (LONG)(SearchString - SaveSearchString);
+                        FLT_ASSERT(SearchIndex >= 1);
+                        LONG SearchOffset = KmpNext[SearchIndex - 1];
+                        LONG Offset = SearchIndex - SearchOffset;
+                        FLT_ASSERT(Offset >= 1);
+                        SearchString = SaveSearchString + SearchOffset;
+                        MatchStringStart += Offset;
+                        MatchString  = MatchStringStart;
+                        if (MatchStringStart > MatchStringEnd) {
+                            Status = STATUS_NOT_FOUND;
+                            break;
+                        }
+                    }
                 }
                 else {
                     MatchString++;
@@ -978,33 +1020,7 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
             } while (1);
         }
         else {
-            // Forward search
-            MatchStringStart = MatchString;
-            MatchStringEnd   = MatchString + (MatchLength - SearchLength);
-            do {
-                MatchChar  = *MatchString;
-                SearchChar = *SearchString;
-                if (MatchChar != SearchChar) {
-                    MatchStringStart++;
-                    if (MatchStringStart > MatchStringEnd) {
-                        Status = STATUS_NOT_FOUND;
-                        break;
-                    }
-                    MatchString  = MatchStringStart;
-                    SearchString = SaveSearchString;
-                }
-                else {
-                    MatchString++;
-                    SearchString++;
-                    if (SearchString == SearchStringEnd) {
-                        FLT_ASSERT(MatchStringStart >= SaveMatchString);
-                        *IndexOf = (LONG)((MatchStringStart - SaveMatchString) * sizeof(WCHAR));
-                        Status = STATUS_SUCCESS;
-                        break;
-                    }
-                    FLT_ASSERT(MatchString < (SaveMatchString + MatchLength));
-                }
-            } while (1);
+            // Reverse search
         }
     }
     else {
@@ -1013,9 +1029,11 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
     }
 
 Cleanup:
-    if (MatchTable != NULL) {
-        RTL_FREE(MatchTable);
+#if 0
+    if (KmpNext != NULL) {
+        RTL_FREE(KmpNext);
     }
+#endif
     return Status;
 }
 
@@ -1024,13 +1042,14 @@ FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
     return RtlUnicodeCharIndexOf_KMP_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
                                                    SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
-                                                   Flags, IndexOf);
+                                                   KmpNext, Flags, IndexOf);
 }
 
 ////////////////////////////////////////////////////////////////////////
