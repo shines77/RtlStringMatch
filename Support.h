@@ -147,6 +147,18 @@ typedef struct _UNICODE_STRING {
 #define fit_max(a, b)   (((a) >= (b)) ? (a) : (b))
 #endif
 
+#define RTL_STRING_TAG                      'rtst'
+
+#ifndef RTL_MALLOC
+#if !defined(_NTIFS_) && !defined(_NTDDK_)
+#define RTL_MALLOC(_Size)           malloc(_Size)
+#define RTL_FREE(_Ptr)              free(_Ptr)
+#else
+#define RTL_MALLOC(_Size)           ExAllocatePoolWithTag(NonPagedPool, _Size, RTL_STRING_TAG)
+#define RTL_FREE(_Ptr)              ExFreePoolWithTag(_Ptr, RTL_STRING_TAG)
+#endif
+#endif // RTL_MALLOC
+
 ////////////////////////////////////////////////////////////////////////
 
 #define RTL_CASE_INSENSITIVE            0x00000000UL
@@ -288,6 +300,86 @@ RtlUnicodeStringWithIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf(
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+////////////////////////////////////////////////////////////////////////
+
+LONG *
+Prepare_KMP_Next(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+////////////////////////////////////////////////////////////////////////
+
+LONG *
+Prepare_KMP_PartialMatchTable(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
     _In_ ULONG Flags,

@@ -264,6 +264,88 @@ void RtlUnicodeStringIndexOf_ReverseSearch_CaseSensitive_PerformanceTest()
     RtlFreeUnicodeString(&usSearchName);
 }
 
+void RtlUnicodeStringIndexOf_KMP2_CaseSensitive_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    NTSTATUS Status;
+
+    RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
+
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        LONG * kmpNext = Prepare_KMP_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf_KMP2_CaseSensitive(&usFullPath, &usSearchName,
+                                                                kmpNext,
+                                                                RTL_CASE_SENSITIVE,
+                                                                &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
+        }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
+
+        if (kmpNext != NULL) {
+            RTL_FREE(kmpNext);
+        }
+    }
+
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
+
+void RtlUnicodeStringIndexOf_KMP2a_CaseSensitive_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    NTSTATUS Status;
+
+    RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
+
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        LONG * kmpNext = Prepare_KMP_Next(usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR));
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(&usFullPath, &usSearchName,
+                                                                 kmpNext,
+                                                                 RTL_CASE_SENSITIVE,
+                                                                 &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
+        }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
+
+        if (kmpNext != NULL) {
+            RTL_FREE(kmpNext);
+        }
+    }
+
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
+
 void UnicodeString_IndexOf_UnitTest()
 {
     printf("UnitTest:\n\n");
@@ -300,10 +382,32 @@ void UnicodeString_IndexOf_PerformanceTest()
     printf("RtlUnicodeStringIndexOf_CaseSensitive() Reverse Search:\n\n");
     RtlUnicodeStringIndexOf_ReverseSearch_CaseSensitive_PerformanceTest();
     printf("\n");
+
+    printf("RtlUnicodeStringIndexOf_KMP2_CaseSensitive():\n\n");
+    RtlUnicodeStringIndexOf_KMP2_CaseSensitive_PerformanceTest();
+    printf("\n");
+
+    printf("RtlUnicodeStringIndexOf_KMP2a_CaseSensitive():\n\n");
+    RtlUnicodeStringIndexOf_KMP2a_CaseSensitive_PerformanceTest();
+    printf("\n");    
 }
 
 int main(int argc, char * argv[])
 {
+#if defined(_DEBUG) && 0
+    LONG * MatchTable = Prepare_KMP_PartialMatchTable(L"ABCDABD", wcslen(L"ABCDABD"));
+    LONG * kmpNext = Prepare_KMP_Next(L"ABCDABD", wcslen(L"ABCDABD"));
+
+    if (MatchTable) {
+        RTL_FREE(MatchTable);
+    }
+    if (kmpNext) {
+        RTL_FREE(kmpNext);
+    }
+
+    return 0;
+#endif
+
     UnicodeString_IndexOf_UnitTest();
     UnicodeString_IndexOf_PerformanceTest();
 

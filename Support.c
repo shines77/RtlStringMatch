@@ -333,14 +333,14 @@ RtlUnicodeCharIndexOf(
     if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
 #if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
         if (CaseInSensitive) {
-            NewMatchString = (PWCHAR)malloc((MatchLength + 1) * sizeof(WCHAR));
+            NewMatchString = (PWCHAR)RTL_MALLOC((MatchLength + 1) * sizeof(WCHAR));
             Dest   = NewMatchString;
             Source = MatchString;
             for (i = 0; i < MatchLength; ++i) {
                 *Dest++ = __InlineDowncaseUnicodeChar(*Source++);
             }
             *Dest = UNICODE_NULL;
-            NewSearchString = (PWCHAR)malloc((SearchLength + 1) * sizeof(WCHAR));
+            NewSearchString = (PWCHAR)RTL_MALLOC((SearchLength + 1) * sizeof(WCHAR));
             Dest   = NewSearchString;
             Source = SearchString;
             for (i = 0; i < SearchLength; ++i) {
@@ -435,10 +435,10 @@ Cleanup:
 #if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
     if (CaseInSensitive) {
         if (NewMatchString != NULL) {
-            free(NewMatchString);
+            RTL_FREE(NewMatchString);
         }
         if (NewSearchString != NULL) {
-            free(NewSearchString);
+            RTL_FREE(NewSearchString);
         }
     }
 #endif
@@ -623,6 +623,418 @@ RtlUnicodeStringIndexOf_CaseSensitive(
 
 ////////////////////////////////////////////////////////////////////////
 
+LONG *
+Prepare_KMP_Next(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    )
+{
+    LONG * kmpNext;
+    LONG match, search;
+
+    kmpNext = RTL_MALLOC((SearchLength + 1) * sizeof(LONG));
+    if (kmpNext != NULL) {
+        match = 0;
+        search = -1;
+        kmpNext[0] = -1;
+        while (match < (LONG)SearchLength) {
+            while (search > -1 && SearchString[match] != SearchString[search]) {
+                FLT_ASSERT(search <= (LONG)SearchLength);
+                search = kmpNext[search];
+            }
+            match++;
+            search++;
+            FLT_ASSERT(match <= (LONG)SearchLength);
+            FLT_ASSERT(search <= (LONG)SearchLength);
+            if (SearchString[match] == SearchString[search]) {
+                kmpNext[match] = kmpNext[search];
+            }
+            else {
+                kmpNext[match] = search;
+            }
+        }
+    }
+    return kmpNext;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    NTSTATUS Status = STATUS_NOT_FOUND;
+
+    PWCHAR SaveMatchString, MatchStringEnd;
+    WCHAR MatchChar;
+    LONG SearchIndex, MatchIndex;
+//    LONG * KmpNext = NULL;
+
+    RTL_PAGED_CODE();
+
+    FLT_ASSERT(MatchString != NULL);
+    FLT_ASSERT(SearchString != NULL);
+
+    if (IndexOf == NULL) {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+    *IndexOf = -1;
+
+    if (SearchLength == 0) {
+        *IndexOf = 0;
+        Status = STATUS_NOT_FOUND;
+        goto Cleanup;
+    }
+
+    // The length of a substring is greater than the length of the string being matched.
+    if (MatchLength < SearchLength) {
+        goto Cleanup;
+    }
+
+    FLT_ASSERT(MatchLength >= SearchLength);
+    if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+#if 0
+        // Prepare the partial match table.
+        KmpNext = Prepare_KMP_Next(SearchString, SearchLength);
+        FLT_ASSERT(KmpNext != NULL);
+#endif
+        SaveMatchString = MatchString;
+        MatchStringEnd  = MatchString + MatchLength;
+
+        // Start search ...
+        SearchIndex = 0;
+        do {
+            MatchChar = *MatchString;
+            while (SearchString[SearchIndex] != MatchChar) {
+                SearchIndex = KmpNext[SearchIndex];
+                if (SearchIndex < 0) {
+                    break;
+                }
+            }
+            SearchIndex++;
+            MatchString++;
+            if (SearchIndex >= (LONG)SearchLength) {
+                MatchIndex = (LONG)(MatchString - SaveMatchString);
+                *IndexOf = (LONG)((MatchIndex - SearchIndex) * sizeof(WCHAR));
+                Status = STATUS_SUCCESS;
+                break;
+            }            
+        } while (MatchString < MatchStringEnd);
+    }
+    else {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+Cleanup:
+#if 0
+    if (KmpNext != NULL) {
+        RTL_FREE(KmpNext);
+    }
+#endif
+    return Status;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    NTSTATUS Status = STATUS_NOT_FOUND;
+
+    LONG SearchIndex, MatchIndex;
+//    LONG * KmpNext = NULL;
+
+    RTL_PAGED_CODE();
+
+    FLT_ASSERT(MatchString != NULL);
+    FLT_ASSERT(SearchString != NULL);
+
+    if (IndexOf == NULL) {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+    *IndexOf = -1;
+
+    if (SearchLength == 0) {
+        *IndexOf = 0;
+        Status = STATUS_NOT_FOUND;
+        goto Cleanup;
+    }
+
+    // The length of a substring is greater than the length of the string being matched.
+    if (MatchLength < SearchLength) {
+        goto Cleanup;
+    }
+
+    FLT_ASSERT(MatchLength >= SearchLength);
+    if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+#if 0
+        // Prepare the partial match table.
+        KmpNext = Prepare_KMP_Next(SearchString, SearchLength);
+        FLT_ASSERT(KmpNext != NULL);
+#endif
+
+        // Start search ...
+        SearchIndex = MatchIndex = 0;
+        while (MatchIndex < (LONG)MatchLength) {
+            while ((SearchIndex >= 0) && (SearchString[SearchIndex] != MatchString[MatchIndex])) {
+                SearchIndex = KmpNext[SearchIndex];
+            }
+            SearchIndex++;
+            MatchIndex++;
+            if (SearchIndex >= (LONG)SearchLength) {
+                *IndexOf = (LONG)((MatchIndex - SearchIndex) * sizeof(WCHAR));
+                Status = STATUS_SUCCESS;
+                break;
+            }
+        }
+    }
+    else {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+Cleanup:
+#if 0
+    if (KmpNext != NULL) {
+        RTL_FREE(KmpNext);
+    }
+#endif
+    return Status;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    return RtlUnicodeCharIndexOf_KMP2_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
+                                                    SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
+                                                    KmpNext, Flags, IndexOf);
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ LONG * KmpNext,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    return RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
+                                                     SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
+                                                     KmpNext, Flags, IndexOf);
+}
+
+////////////////////////////////////////////////////////////////////////
+
+LONG *
+Prepare_KMP_PartialMatchTable(
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength
+    )
+{
+    LONG * MatchTable;
+    ULONG comm_len, max_comm_len;
+    BOOLEAN is_common;
+    WCHAR * prefix, * suffix;
+    ULONG pre_len, suf_len;
+    ULONG i, j, k;
+    MatchTable = RTL_MALLOC(SearchLength * sizeof(LONG));
+    if (MatchTable != NULL) {
+        MatchTable[0] = 0;
+        for (i = 2; i <= SearchLength; ++i) {
+            max_comm_len = 0;
+            for (j = 1; j <= i; ++j) {
+                prefix = SearchString;
+                pre_len = j;
+                suffix = SearchString + j;
+                suf_len = i - pre_len;
+                is_common = TRUE;
+                comm_len = fit_min(pre_len, suf_len);
+                for (k = 0; k < comm_len; ++k) {
+                    if (*prefix != *suffix) {
+                        is_common = FALSE;
+                        break;
+                    }
+                    prefix++;
+                    suffix++;
+                }
+                if ((is_common == TRUE) && (comm_len > max_comm_len)) {
+                    max_comm_len = comm_len;
+                }
+            }
+            MatchTable[i - 1] = max_comm_len;
+        }
+    }
+    return MatchTable;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_KMP_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    CONST BOOLEAN IsReversiSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    NTSTATUS Status = STATUS_NOT_FOUND;
+
+    PWCHAR SearchStringEnd;
+    PWCHAR MatchStringStart, MatchStringEnd;
+    PWCHAR SaveSearchString, SaveMatchString;
+    WCHAR SearchChar, MatchChar;
+    LONG * MatchTable = NULL;
+
+    RTL_PAGED_CODE();
+
+    FLT_ASSERT(MatchString != NULL);
+    FLT_ASSERT(SearchString != NULL);
+
+    if (IndexOf == NULL) {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+    *IndexOf = -1;
+
+    if (SearchLength == 0) {
+        *IndexOf = 0;
+        Status = STATUS_NOT_FOUND;
+        goto Cleanup;
+    }
+
+    // The length of a substring is greater than the length of the string being matched.
+    if (MatchLength < SearchLength) {
+        goto Cleanup;
+    }
+
+    FLT_ASSERT(MatchLength >= SearchLength);
+    if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+        // Prepare the partial match table.
+        MatchTable = Prepare_KMP_PartialMatchTable(SearchString, SearchLength);
+
+        // Save the original values.
+        SaveSearchString = SearchString;
+        SaveMatchString  = MatchString;
+        SearchStringEnd  = SearchString + SearchLength;
+
+        if (IsReversiSearch) {
+            // Reverse search
+            MatchStringStart = MatchString + (MatchLength - SearchLength);
+            MatchStringEnd   = MatchString;
+            MatchString      = MatchStringStart;
+            do {
+                MatchChar  = *MatchString;
+                SearchChar = *SearchString;
+                if (MatchChar != SearchChar) {
+                    MatchStringStart--;
+                    if (MatchStringStart < MatchStringEnd) {
+                        Status = STATUS_NOT_FOUND;
+                        break;
+                    }
+                    MatchString = MatchStringStart;
+                    SearchString = SaveSearchString;
+                }
+                else {
+                    MatchString++;
+                    SearchString++;
+                    if (SearchString == SearchStringEnd) {
+                        FLT_ASSERT(MatchStringStart >= SaveMatchString);
+                        *IndexOf = (LONG)((MatchStringStart - SaveMatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchString < (SaveMatchString + MatchLength));
+                }
+            } while (1);
+        }
+        else {
+            // Forward search
+            MatchStringStart = MatchString;
+            MatchStringEnd   = MatchString + (MatchLength - SearchLength);
+            do {
+                MatchChar  = *MatchString;
+                SearchChar = *SearchString;
+                if (MatchChar != SearchChar) {
+                    MatchStringStart++;
+                    if (MatchStringStart > MatchStringEnd) {
+                        Status = STATUS_NOT_FOUND;
+                        break;
+                    }
+                    MatchString  = MatchStringStart;
+                    SearchString = SaveSearchString;
+                }
+                else {
+                    MatchString++;
+                    SearchString++;
+                    if (SearchString == SearchStringEnd) {
+                        FLT_ASSERT(MatchStringStart >= SaveMatchString);
+                        *IndexOf = (LONG)((MatchStringStart - SaveMatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchString < (SaveMatchString + MatchLength));
+                }
+            } while (1);
+        }
+    }
+    else {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+Cleanup:
+    if (MatchTable != NULL) {
+        RTL_FREE(MatchTable);
+    }
+    return Status;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    return RtlUnicodeCharIndexOf_KMP_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
+                                                   SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
+                                                   Flags, IndexOf);
+}
+
+////////////////////////////////////////////////////////////////////////
+
 VOID
 FIT_NTAPI
 RtlInitUnicodeString(
@@ -644,7 +1056,7 @@ RtlAllocateUnicodeString(
 {
     UnicodeString->Length = 0;
     UnicodeString->MaximumLength = MaximumLength;
-    UnicodeString->Buffer = (PWCHAR)malloc(MaximumLength * sizeof(CHAR));
+    UnicodeString->Buffer = (PWCHAR)RTL_MALLOC(MaximumLength * sizeof(CHAR));
 }
 
 VOID
@@ -654,7 +1066,7 @@ RtlFreeUnicodeString(
     )
 {
     if (UnicodeString->Buffer != NULL) {
-        free(UnicodeString->Buffer);
+        RTL_FREE(UnicodeString->Buffer);
         UnicodeString->Length = 0;
         UnicodeString->MaximumLength = 0;
         UnicodeString->Buffer = NULL;
