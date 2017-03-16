@@ -63,11 +63,12 @@ Environment:
 #endif // NT_SUCCESS
 
 #if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED)
-#define NTAPI   __stdcall
+//#define FIT_NTAPI   __stdcall
+#define FIT_NTAPI   __cdecl
 #else
 #define _cdecl
 #define __cdecl
-#define NTAPI
+#define FIT_NTAPI
 #endif
 
 #ifndef noif
@@ -194,25 +195,25 @@ __InlineDowncaseUnicodeChar(
 ////////////////////////////////////////////////////////////////////////
 
 CHAR
-NTAPI
+FIT_NTAPI
 FitRtlUpcaseAnsiChar(
     _In_ CHAR SourceChar
     );
 
 CHAR
-NTAPI
+FIT_NTAPI
 FitRtlDowncaseAnsiChar(
     _In_ CHAR SourceChar
     );
 
 WCHAR
-NTAPI
+FIT_NTAPI
 FitRtlUpcaseUnicodeChar(
     _In_ WCHAR SourceChar
     );
 
 WCHAR
-NTAPI
+FIT_NTAPI
 FitRtlDowncaseUnicodeChar(
     _In_ WCHAR SourceChar
     );
@@ -220,7 +221,7 @@ FitRtlDowncaseUnicodeChar(
 ////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharInUnicodeChar(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -230,7 +231,7 @@ RtlFindCharInUnicodeChar(
     );
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharInUnicodeString(
     _In_ PUNICODE_STRING MatchString,
     _In_ WCHAR SearchChar,
@@ -241,7 +242,7 @@ RtlFindCharInUnicodeString(
 ////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharsInUnicodeChar(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -254,7 +255,7 @@ RtlFindCharsInUnicodeChar(
 ////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeCharIndexOf(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -265,7 +266,7 @@ RtlUnicodeCharIndexOf(
     );
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeCharWithIndexOf(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PWCHAR SearchString,
@@ -275,7 +276,7 @@ RtlUnicodeCharWithIndexOf(
     );
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringWithIndexOf(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -285,7 +286,7 @@ RtlUnicodeStringWithIndexOf(
     );
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringIndexOf(
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
@@ -295,35 +296,57 @@ RtlUnicodeStringIndexOf(
 
 ////////////////////////////////////////////////////////////////////////
 
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    );
+
+////////////////////////////////////////////////////////////////////////
+
 VOID
-NTAPI
+FIT_NTAPI
 RtlInitUnicodeString(
     _Out_ PUNICODE_STRING DestString,
     _In_opt_z_ PCWSTR SourceString
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlAllocateUnicodeString(
     _Out_ PUNICODE_STRING UnicodeString,
     _In_ USHORT MaximumLength
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlFreeUnicodeString(
     _In_ PUNICODE_STRING UnicodeString
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlCopyUnicodeString(
     _Inout_ PUNICODE_STRING DestString,
     _In_ PUNICODE_STRING SourceString
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
     _In_ CONST WCHAR * SourceString
@@ -344,7 +367,7 @@ wchar_t * __stdcall my_wcsstr(
 ////////////////////////////////////////////////////////////////////////
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeAssert(
     _In_ ULONG No,
     _In_ NTSTATUS Status,
@@ -353,13 +376,13 @@ RtlUnicodeAssert(
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringIndexOfTest(
     VOID
     );
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringReverseIndexOfTest(
     VOID
     );

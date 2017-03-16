@@ -18,617 +18,247 @@ const LONG Iteration = 1000000;
 const LONG Iteration = 10000;
 #endif
 
+CONST WCHAR szFullPath[] = L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h";
+CONST WCHAR * szSearchName[8] = {
+    L"Stop_Watch.h",
+    L"stop_watch.h",
+    L"Shines77",
+    L"shines77",
+    L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h",
+    L"\\?\\c:\\project\\opensrc\\shines77\\jimi_http\\src\\test\\http_parser_test\\stop_watch.h",
+    L"\\?\\C:\\Project\\OpenSrc\\Shines77\\RtlStringMatch\\src\\test\\unittest\\main.cpp",
+    L"\\?\\c:\\project\\opensrc\\shines77\\rtlstringmatch\\src\\test\\unittest\\main.cpp"
+};
+
 void RtlUnicodeStringIndexOf_PerformanceTest()
 {
-    CONST WCHAR szFullPath[] = L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h";
-    CONST WCHAR szSearchName1[] = L"Stop_Watch.h";
-    CONST WCHAR szSearchName2[] = L"stop_watch.h";
-    CONST WCHAR szSearchName3[] = L"Shines77";
-    CONST WCHAR szSearchName4[] = L"shines77";
-
     UNICODE_STRING usFullPath, usSearchName;
     StopWatch sw;
-    LONG IndexOf = 0, Sum, i;
+    LONG IndexOf = 0, Sum, n, i;
     NTSTATUS Status;
 
     RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
     RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
 
-    //----------------------------------------------------------------------------
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName1);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE, &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
-    }
-    sw.stop();
+        sw.stop();
 
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
+        printf("[%2d] - CaseSensitive: No,  Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
 
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE, &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName2);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName3);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName4);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
 
     RtlFreeUnicodeString(&usFullPath);
     RtlFreeUnicodeString(&usSearchName);
 }
 
-void RtlUnicodeStringReverseIndexOf_PerformanceTest()
+void RtlUnicodeStringIndexOf_ReverseSearch_PerformanceTest()
 {
-    CONST WCHAR szFullPath[] = L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h";
-    CONST WCHAR szSearchName1[] = L"Stop_Watch.h";
-    CONST WCHAR szSearchName2[] = L"stop_watch.h";
-    CONST WCHAR szSearchName3[] = L"Shines77";
-    CONST WCHAR szSearchName4[] = L"shines77";
-
     UNICODE_STRING usFullPath, usSearchName;
     StopWatch sw;
-    LONG IndexOf = 0, Sum, i;
+    LONG IndexOf = 0, Sum, n, i;
     NTSTATUS Status;
 
     RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
     RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
 
-    //----------------------------------------------------------------------------
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName1);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName,
+                                             RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH,
+                                             &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
-    }
-    sw.stop();
+        sw.stop();
 
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
+        printf("[%2d] - CaseSensitive: No,  Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
 
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName,
+                                             RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH,
+                                             &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName2);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName3);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName4);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        Status = RtlUnicodeStringIndexOf(&usFullPath, &usSearchName, RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH, &IndexOf);
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
 
     RtlFreeUnicodeString(&usFullPath);
     RtlFreeUnicodeString(&usSearchName);
 }
 
-void cruntime_strstr_PerformanceTest()
+void cruntime_wcsstr_PerformanceTest()
 {
-    CONST WCHAR szFullPath[] = L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h";
-    CONST WCHAR szSearchName1[] = L"Stop_Watch.h";
-    CONST WCHAR szSearchName2[] = L"stop_watch.h";
-    CONST WCHAR szSearchName3[] = L"Shines77";
-    CONST WCHAR szSearchName4[] = L"shines77";
-
     UNICODE_STRING usFullPath, usSearchName;
     StopWatch sw;
-    LONG IndexOf = 0, Sum, i;
+    LONG IndexOf = 0, Sum, n, i;
     wchar_t * MatchPtr;
 
     RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
     RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
 
-    //----------------------------------------------------------------------------
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName1);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
+            if (MatchPtr != NULL)
+                IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
+            else
+                IndexOf = -1;
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName2);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName3);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName4);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
 
     RtlFreeUnicodeString(&usFullPath);
     RtlFreeUnicodeString(&usSearchName);
 }
 
-void my_strstr_PerformanceTest()
+void my_wcsstr_PerformanceTest()
 {
-    CONST WCHAR szFullPath[] = L"\\?\\C:\\Project\\OpenSrc\\Shines77\\jimi_http\\src\\test\\http_parser_test\\Stop_Watch.h";
-    CONST WCHAR szSearchName1[] = L"Stop_Watch.h";
-    CONST WCHAR szSearchName2[] = L"stop_watch.h";
-    CONST WCHAR szSearchName3[] = L"Shines77";
-    CONST WCHAR szSearchName4[] = L"shines77";
-
     UNICODE_STRING usFullPath, usSearchName;
     StopWatch sw;
-    LONG IndexOf = 0, Sum, i;
+    LONG IndexOf = 0, Sum, n, i;
     wchar_t * MatchPtr;
 
     RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
     RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
 
-    //----------------------------------------------------------------------------
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
 
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName1);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
+            if (MatchPtr != NULL)
+                IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
+            else
+                IndexOf = -1;
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
 
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
 
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+void RtlUnicodeStringIndexOf_CaseSensitive_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    NTSTATUS Status;
+
+    RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
+
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf_CaseSensitive(&usFullPath, &usSearchName,
+                                                           RTL_CASE_SENSITIVE,
+                                                           &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
 
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
 
-    //----------------------------------------------------------------------------
+void RtlUnicodeStringIndexOf_ReverseSearch_CaseSensitive_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    NTSTATUS Status;
 
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName2);
+    RtlAllocateUnicodeString(&usFullPath,   MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
 
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            Status = RtlUnicodeStringIndexOf_CaseSensitive(&usFullPath, &usSearchName,
+                                                           RTL_CASE_SENSITIVE | RTL_REVERSE_SEARCH,
+                                                           &IndexOf);
+            noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
         }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+                n, Iteration, Sum, sw.getElapsedMillisec());
     }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName3);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
-
-    RtlCopyUnicodeStringFromChar(&usFullPath,   szFullPath);
-    RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName4);
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    Sum = 0;
-    sw.start();
-    for (i = 0; i < Iteration; ++i) {
-        MatchPtr = my_wcsstr(usFullPath.Buffer, usSearchName.Buffer);
-        if (MatchPtr != NULL)
-            IndexOf = (LONG)((ULONG_PTR)MatchPtr - (ULONG_PTR)usFullPath.Buffer);
-        else
-            IndexOf = -1;
-        noif (NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
-            Sum += IndexOf;
-        }
-    }
-    sw.stop();
-
-    printf("Iteration: %d, Check Sum: %11d, Time Spent: %8.3f ms\n", Iteration, Sum, sw.getElapsedMillisec());
-
-    //----------------------------------------------------------------------------
 
     RtlFreeUnicodeString(&usFullPath);
     RtlFreeUnicodeString(&usSearchName);
@@ -646,13 +276,29 @@ void UnicodeString_IndexOf_UnitTest()
 void UnicodeString_IndexOf_PerformanceTest()
 {
     printf("PerformanceTest:\n\n");
+
+    printf("RtlUnicodeStringIndexOf() Forward Search:\n\n");
     RtlUnicodeStringIndexOf_PerformanceTest();
     printf("\n");
-    RtlUnicodeStringReverseIndexOf_PerformanceTest();
+
+    printf("RtlUnicodeStringIndexOf() Reverse Search:\n\n");
+    RtlUnicodeStringIndexOf_ReverseSearch_PerformanceTest();
     printf("\n");
-    cruntime_strstr_PerformanceTest();
+
+    printf("cruntime wscstr():\n\n");
+    cruntime_wcsstr_PerformanceTest();
     printf("\n");
-    my_strstr_PerformanceTest();
+
+    printf("my_wscstr():\n\n");
+    my_wcsstr_PerformanceTest();
+    printf("\n");
+
+    printf("RtlUnicodeStringIndexOf_CaseSensitive() Forward Search:\n\n");
+    RtlUnicodeStringIndexOf_CaseSensitive_PerformanceTest();
+    printf("\n");
+
+    printf("RtlUnicodeStringIndexOf_CaseSensitive() Reverse Search:\n\n");
+    RtlUnicodeStringIndexOf_ReverseSearch_CaseSensitive_PerformanceTest();
     printf("\n");
 }
 

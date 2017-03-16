@@ -71,7 +71,7 @@ __InlineDowncaseUnicodeChar(
 }
 
 CHAR
-NTAPI
+FIT_NTAPI
 FitRtlUpcaseAnsiChar(
     _In_ CHAR SourceChar
     )
@@ -81,7 +81,7 @@ FitRtlUpcaseAnsiChar(
 }
 
 CHAR
-NTAPI
+FIT_NTAPI
 FitRtlDowncaseAnsiChar(
     _In_ CHAR SourceChar
     )
@@ -91,7 +91,7 @@ FitRtlDowncaseAnsiChar(
 }
 
 WCHAR
-NTAPI
+FIT_NTAPI
 FitRtlUpcaseUnicodeChar(
     _In_ WCHAR SourceChar
     )
@@ -101,7 +101,7 @@ FitRtlUpcaseUnicodeChar(
 }
 
 WCHAR
-NTAPI
+FIT_NTAPI
 FitRtlDowncaseUnicodeChar(
     _In_ WCHAR SourceChar
     )
@@ -156,7 +156,7 @@ __RtlFindCharInUnicodeChar(
 }
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharInUnicodeChar(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -185,7 +185,7 @@ RtlFindCharInUnicodeChar(
 }
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharInUnicodeString(
     _In_ PUNICODE_STRING MatchString,
     _In_ WCHAR SearchChar,
@@ -216,7 +216,7 @@ RtlFindCharInUnicodeString(
 //
 //
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlFindCharsInUnicodeChar(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -282,7 +282,7 @@ Cleanup:
 ///////////////////////////////////////////////////////////////////////////
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeCharIndexOf(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -375,9 +375,7 @@ RtlUnicodeCharIndexOf(
                         break;
                     }
                     MatchString = MatchStringStart;
-                    if (SearchString != SaveSearchString) {
-                        SearchString = SaveSearchString;
-                    }
+                    SearchString = SaveSearchString;
                 }
                 else {
                     MatchString++;
@@ -411,10 +409,8 @@ RtlUnicodeCharIndexOf(
                         Status = STATUS_NOT_FOUND;
                         break;
                     }
-                    MatchString = MatchStringStart;
-                    if (SearchString != SaveSearchString) {
-                        SearchString = SaveSearchString;
-                    }
+                    MatchString  = MatchStringStart;
+                    SearchString = SaveSearchString;
                 }
                 else {
                     MatchString++;
@@ -450,7 +446,7 @@ Cleanup:
 }
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeCharWithIndexOf(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PWCHAR SearchString,
@@ -465,7 +461,7 @@ RtlUnicodeCharWithIndexOf(
 }
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringWithIndexOf(
     _In_ PWCHAR MatchString,
     _In_ ULONG MatchLength,
@@ -480,7 +476,7 @@ RtlUnicodeStringWithIndexOf(
 }
 
 NTSTATUS
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringIndexOf(    
     _In_ PUNICODE_STRING MatchString,
     _In_ PUNICODE_STRING SearchString,
@@ -495,8 +491,140 @@ RtlUnicodeStringIndexOf(
 
 ////////////////////////////////////////////////////////////////////////
 
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharIndexOf_CaseSensitive(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    CONST BOOLEAN IsReversiSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    NTSTATUS Status = STATUS_NOT_FOUND;
+
+    PWCHAR SearchStringEnd;
+    PWCHAR MatchStringStart, MatchStringEnd;
+    PWCHAR SaveSearchString, SaveMatchString;
+    WCHAR SearchChar, MatchChar;
+
+    RTL_PAGED_CODE();
+
+    FLT_ASSERT(MatchString != NULL);
+    FLT_ASSERT(SearchString != NULL);
+
+    if (IndexOf == NULL) {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+    *IndexOf = -1;
+
+    if (SearchLength == 0) {
+        *IndexOf = 0;
+        Status = STATUS_NOT_FOUND;
+        goto Cleanup;
+    }
+
+    // The length of a substring is greater than the length of the string being matched.
+    if (MatchLength < SearchLength) {
+        goto Cleanup;
+    }
+
+    FLT_ASSERT(MatchLength >= SearchLength);
+    if ((ULONG_PTR)SearchString & (ULONG_PTR)MatchString) {
+        SaveSearchString = SearchString;
+        SaveMatchString  = MatchString;
+        SearchStringEnd  = SearchString + SearchLength;
+        if (IsReversiSearch) {
+            // Reverse search
+            MatchStringStart = MatchString + (MatchLength - SearchLength);
+            MatchStringEnd   = MatchString;
+            MatchString      = MatchStringStart;
+            do {
+                MatchChar  = *MatchString;
+                SearchChar = *SearchString;
+                if (MatchChar != SearchChar) {
+                    MatchStringStart--;
+                    if (MatchStringStart < MatchStringEnd) {
+                        Status = STATUS_NOT_FOUND;
+                        break;
+                    }
+                    MatchString = MatchStringStart;
+                    SearchString = SaveSearchString;
+                }
+                else {
+                    MatchString++;
+                    SearchString++;
+                    if (SearchString == SearchStringEnd) {
+                        FLT_ASSERT(MatchStringStart >= SaveMatchString);
+                        *IndexOf = (LONG)((MatchStringStart - SaveMatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchString < (SaveMatchString + MatchLength));
+                }
+            } while (1);
+        }
+        else {
+            // Forward search
+            MatchStringStart = MatchString;
+            MatchStringEnd   = MatchString + (MatchLength - SearchLength);
+            do {
+                MatchChar  = *MatchString;
+                SearchChar = *SearchString;
+                if (MatchChar != SearchChar) {
+                    MatchStringStart++;
+                    if (MatchStringStart > MatchStringEnd) {
+                        Status = STATUS_NOT_FOUND;
+                        break;
+                    }
+                    MatchString  = MatchStringStart;
+                    SearchString = SaveSearchString;
+                }
+                else {
+                    MatchString++;
+                    SearchString++;
+                    if (SearchString == SearchStringEnd) {
+                        FLT_ASSERT(MatchStringStart >= SaveMatchString);
+                        *IndexOf = (LONG)((MatchStringStart - SaveMatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchString < (SaveMatchString + MatchLength));
+                }
+            } while (1);
+        }
+    }
+    else {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+Cleanup:
+    return Status;
+}
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeStringIndexOf_CaseSensitive(    
+    _In_ PUNICODE_STRING MatchString,
+    _In_ PUNICODE_STRING SearchString,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    return RtlUnicodeCharIndexOf_CaseSensitive(MatchString->Buffer, MatchString->Length / sizeof(WCHAR),
+                                               SearchString->Buffer, SearchString->Length / sizeof(WCHAR),
+                                               Flags, IndexOf);
+}
+
+////////////////////////////////////////////////////////////////////////
+
 VOID
-NTAPI
+FIT_NTAPI
 RtlInitUnicodeString(
     _Out_ PUNICODE_STRING DestString,
     _In_opt_z_ PCWSTR SourceString
@@ -508,7 +636,7 @@ RtlInitUnicodeString(
 }
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlAllocateUnicodeString(
     _Out_ PUNICODE_STRING UnicodeString,
     _In_ USHORT MaximumLength
@@ -520,7 +648,7 @@ RtlAllocateUnicodeString(
 }
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlFreeUnicodeString(
     _In_ PUNICODE_STRING UnicodeString
     )
@@ -534,7 +662,7 @@ RtlFreeUnicodeString(
 }
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlCopyUnicodeString(
     _Inout_ PUNICODE_STRING DestString,
     _In_ PUNICODE_STRING SourceString
@@ -559,7 +687,7 @@ RtlCopyUnicodeString(
 }
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
     _In_ CONST WCHAR * SourceString
@@ -670,7 +798,7 @@ wchar_t * __stdcall my_wcsstr(
 ////////////////////////////////////////////////////////////////////////
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeAssert(
     _In_ ULONG No,
     _In_ NTSTATUS Status,
@@ -709,7 +837,7 @@ RtlUnicodeAssert(
 ///////////////////////////////////////////////////////////////////////////
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringIndexOfTest(
     VOID
     )
@@ -816,7 +944,7 @@ RtlUnicodeStringIndexOfTest(
 }
 
 VOID
-NTAPI
+FIT_NTAPI
 RtlUnicodeStringReverseIndexOfTest(
     VOID
     )
