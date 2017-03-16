@@ -659,6 +659,12 @@ Prepare_KMP2_Next(
 
 ////////////////////////////////////////////////////////////////////////
 
+//
+// See: http://www-igm.univ-mlv.fr/~lecroq/string/
+// See: http://www-igm.univ-mlv.fr/~lecroq/string/node8.html#SECTION0080
+//
+// PS: This method seems to be inefficient, not recommended.
+//
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
@@ -919,6 +925,15 @@ Prepare_KMP_Next(
 
 ////////////////////////////////////////////////////////////////////////
 
+//
+// KMP
+//
+//   See: http://www.ruanyifeng.com/blog/2013/05/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm.html
+//
+// Boyer-Moore
+//
+//   See: http://www.ruanyifeng.com/blog/2013/05/boyer-moore_string_search_algorithm.html
+//
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP_CaseSensitive(
