@@ -63,8 +63,8 @@ Environment:
 #endif // NT_SUCCESS
 
 #if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED)
-//#define FIT_NTAPI   __stdcall
-#define FIT_NTAPI   __cdecl
+#define FIT_NTAPI   __stdcall
+//#define FIT_NTAPI   __cdecl
 #else
 #define _cdecl
 #define __cdecl
@@ -139,15 +139,13 @@ typedef struct _UNICODE_STRING {
 #define RTL_UNICODE_ASSERT(_No, _Status, _IndexOf, _Value)  RtlUnicodeAssert(_No, _Status, _IndexOf, _Value)
 #endif // RTL_UNICODE_ASSERT
 
-#ifndef fit_min
-#define fit_min(a, b)   (((a) <= (b)) ? (a) : (b))
+#ifndef FIT_MIN
+#define FIT_MIN(a, b)   (((a) <= (b)) ? (a) : (b))
 #endif
 
-#ifndef fit_max
-#define fit_max(a, b)   (((a) >= (b)) ? (a) : (b))
+#ifndef FIT_MAX
+#define FIT_MAX(a, b)   (((a) >= (b)) ? (a) : (b))
 #endif
-
-#define RTL_STRING_TAG                      'rtst'
 
 #ifndef RTL_MALLOC
 #if !defined(_NTIFS_) && !defined(_NTDDK_)
@@ -158,6 +156,8 @@ typedef struct _UNICODE_STRING {
 #define RTL_FREE(_Ptr)              ExFreePoolWithTag(_Ptr, RTL_STRING_TAG)
 #endif
 #endif // RTL_MALLOC
+
+#define RTL_STRING_TAG                  'rtst'
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -451,6 +451,14 @@ RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
     _In_ CONST WCHAR * SourceString
     );
+
+////////////////////////////////////////////////////////////////////////
+
+void BoyerMoore_Preprocessing(WCHAR * pattern, int pattern_len);
+
+int BoyerMoore(WCHAR * target, int target_len,
+               WCHAR * pattern, int pattern_len,
+               LONG * index_of);
 
 ////////////////////////////////////////////////////////////////////////
 

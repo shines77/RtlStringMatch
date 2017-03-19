@@ -1119,7 +1119,7 @@ RtlCopyUnicodeString(
         DestString->Length = 0;
     }
     else {
-        SourceLength = fit_min(DestString->MaximumLength, SourceString->Length);
+        SourceLength = FIT_MIN(DestString->MaximumLength, SourceString->Length);
         DestString->Length = (USHORT)SourceLength;
 
         RtlCopyMemory(DestString->Buffer,
@@ -1144,7 +1144,7 @@ RtlCopyUnicodeStringFromChar(
         DestString->Length = 0;
     }
     else {
-        SourceLength = fit_min(DestString->MaximumLength, SourceLength);
+        SourceLength = FIT_MIN(DestString->MaximumLength, SourceLength);
         DestString->Length = (USHORT)SourceLength;
 
         RtlCopyMemory(DestString->Buffer, SourceString, SourceLength);
@@ -1239,6 +1239,126 @@ wchar_t * __stdcall my_wcsstr(
     }
 
     return (NULL);
+}
+
+////////////////////////////////////////////////////////////////////////
+
+#define ASIZE   256
+#define XSIZE   512
+
+int bmGs[XSIZE], bmBc[ASIZE];
+
+void preBmBc(WCHAR * pattern, int pattern_len, int bmBc[])
+{
+    int i;
+
+    for (i = 0; i < ASIZE; ++i)
+        bmBc[i] = pattern_len;
+    for (i = 0; i < pattern_len - 1; ++i)
+        bmBc[pattern[i]] = pattern_len - i - 1;
+}
+
+void bmSuffixes(WCHAR * pattern, int length, int * suffix)
+{
+    int f, g, i;
+
+    suffix[length - 1] = length;
+    g = length - 1;
+    for (i = length - 2; i >= 0; --i) {
+        if (i > g && suffix[i + length - 1 - f] < i - g) {
+            suffix[i] = suffix[i + length - 1 - f];
+        }
+        else {
+            if (i < g) {
+                g = i;
+            }
+            f = i;
+            while ((g >= 0) && (pattern[g] == pattern[g + length - 1 - f])) {
+                --g;
+            }
+            suffix[i] = f - g;
+        }
+    }
+}
+
+void preBmGs(WCHAR * pattern, int length, int bmGs[])
+{
+    int i, j, suffix[XSIZE];
+
+    bmSuffixes(pattern, length, suffix);
+
+    for (i = 0; i < length; ++i)
+        bmGs[i] = length;
+
+    j = 0;
+    for (i = length - 1; i >= 0; --i) {
+        if (suffix[i] == i + 1) {
+            for (; j < length - 1 - i; ++j) {
+                if (bmGs[j] == length) {
+                    bmGs[j] = length - 1 - i;
+                }
+            }
+        }
+    }
+    for (i = 0; i <= length - 2; ++i) {
+        bmGs[length - 1 - suffix[i]] = length - 1 - i;
+    }
+}
+
+void BoyerMoore_Preprocessing(WCHAR * pattern, int pattern_len)
+{
+    /* Preprocessing */
+
+    // Preprocessing good suffixs.
+    preBmGs(pattern, pattern_len, bmGs);
+    // Preprocessing bad characters.
+    preBmBc(pattern, pattern_len, bmBc);
+}
+
+int BoyerMoore(WCHAR * target, int target_len,
+               WCHAR * pattern, int pattern_len,
+               LONG * index_of)
+{
+    int target_idx, pattern_idx;
+
+    if (pattern_len != target_len) {
+        /* Searching */
+        pattern_idx = 0;
+        while (pattern_idx <= target_len - pattern_len) {
+            for (target_idx = pattern_len - 1; target_idx >= 0; --target_idx) {
+                if ((pattern[target_idx] != target[target_idx + pattern_idx])) {
+                    break;
+                }
+            }
+
+            if (target_idx >= 0) {
+                pattern_idx += FIT_MAX(bmGs[target_idx],
+                    bmBc[target[target_idx + pattern_idx]] - pattern_len + 1 + target_idx);
+            }
+            else {
+                FLT_ASSERT(pattern_idx >= 0);
+                FLT_ASSERT(pattern_idx < target_len);
+                *index_of = (LONG)(pattern_idx * sizeof(WCHAR));
+                return pattern_idx;
+            }
+        }
+    }
+    else {
+        pattern_idx = 0;
+        for (target_idx = pattern_len - 1; target_idx >= 0; --target_idx) {
+            if ((pattern[target_idx] != target[target_idx])) {
+                pattern_idx = 1;
+                break;
+            }
+        }
+        if (pattern_idx == 0) {
+            *index_of = 0;
+            return 0;
+        }
+    }
+
+    *index_of = -1;
+    return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////
