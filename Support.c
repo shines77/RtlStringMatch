@@ -1319,44 +1319,37 @@ int BoyerMoore(WCHAR * target, int target_len,
                WCHAR * pattern, int pattern_len,
                LONG * index_of)
 {
-    int target_idx, pattern_idx;
+    int pattern_idx, target_idx;
 
-    if (pattern_len != target_len) {
-        /* Searching */
-        pattern_idx = 0;
-        while (pattern_idx <= target_len - pattern_len) {
-            for (target_idx = pattern_len - 1; target_idx >= 0; --target_idx) {
-                if ((pattern[target_idx] != target[target_idx + pattern_idx])) {
-                    break;
-                }
-            }
-
-            if (target_idx >= 0) {
-                pattern_idx += FIT_MAX(bmGs[target_idx],
-                    bmBc[target[target_idx + pattern_idx]] - pattern_len + 1 + target_idx);
-            }
-            else {
-                FLT_ASSERT(pattern_idx >= 0);
-                FLT_ASSERT(pattern_idx < target_len);
-                *index_of = (LONG)(pattern_idx * sizeof(WCHAR));
-                return pattern_idx;
-            }
-        }
+    // The length of a substring is greater than the length of the string being matched.
+    if (target_len < pattern_len) {
+        goto Cleanup;
     }
-    else {
-        pattern_idx = 0;
-        for (target_idx = pattern_len - 1; target_idx >= 0; --target_idx) {
-            if ((pattern[target_idx] != target[target_idx])) {
-                pattern_idx = 1;
+
+    /* Searching */
+    target_idx = 0;
+    while (target_idx <= target_len - pattern_len) {
+        for (pattern_idx = pattern_len - 1; pattern_idx >= 0; --pattern_idx) {
+            if ((pattern[pattern_idx] != target[target_idx + pattern_idx])) {
                 break;
             }
         }
-        if (pattern_idx == 0) {
-            *index_of = 0;
-            return 0;
+
+        if (pattern_idx >= 0) {
+            target_idx += FIT_MAX(bmGs[pattern_idx],
+                bmBc[target[target_idx + pattern_idx]] - ((pattern_len - 1) - pattern_idx));
+        }
+        else {
+            FLT_ASSERT(target_idx >= 0);
+            FLT_ASSERT(target_idx < target_len);
+            FLT_ASSERT(index_of != NULL);
+            *index_of = (LONG)(target_idx * sizeof(WCHAR));
+            return target_idx;
         }
     }
 
+Cleanup:
+    FLT_ASSERT(index_of != NULL);
     *index_of = -1;
     return -1;
 }
