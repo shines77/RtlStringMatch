@@ -1155,6 +1155,166 @@ RtlCopyUnicodeStringFromChar(
     }
 }
 
+///////////////////////////////////////////////////////////////////////////
+//
+// Rtl: The routine of find search string in match string.
+//
+///////////////////////////////////////////////////////////////////////////
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharFastSearch(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
+    )
+{
+    CONST BOOLEAN CaseInSensitive = (BOOLEAN)((Flags & RTL_CASE_SENSITIVE) == 0);
+    CONST BOOLEAN IsReverseSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
+    CONST BOOLEAN StringNoAnyCase = (BOOLEAN)((Flags & RTL_STRING_CASE_MASK) == 0);
+    
+    CONST BOOLEAN MatchStringNoAnyCase   = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == 0);
+    CONST BOOLEAN MatchStringIsDowncase  = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_DOWNCASE);
+    CONST BOOLEAN MatchStringIsUpcase    = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == RTL_MATCH_STRING_IS_UPCASE);
+
+    CONST BOOLEAN SearchStringNoAnyCase  = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == 0);
+    CONST BOOLEAN SearchStringIsDowncase = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_DOWNCASE);
+    CONST BOOLEAN SearchStringIsUpcase   = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_UPCASE);
+
+    NTSTATUS Status = STATUS_NOT_FOUND;
+
+    PWCHAR SearchPtr, MatchPtr;
+    WCHAR  SearchChar, MatchChar;
+
+    RTL_PAGED_CODE();
+
+    FLT_ASSERT(MatchString != NULL);
+    FLT_ASSERT(SearchString != NULL);
+
+    if (IndexOf == NULL) {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+    *IndexOf = -1;
+
+    // The length of a substring is greater than the length of the string being matched.
+    if (MatchLength < SearchLength || SearchLength <= 0) {
+        goto Cleanup;
+    }
+
+    FLT_ASSERT(SearchLength > 0);
+    FLT_ASSERT(MatchLength >= SearchLength);
+    if (((ULONG_PTR)MatchString & (ULONG_PTR)SearchString) != 0) {
+        // Priority reverse search.
+        MatchPtr  = MatchString + MatchLength - 1;
+        SearchPtr = SearchString + SearchLength - 1;
+        // Start compare the search strings.
+        if (!CaseInSensitive || SearchStringNoAnyCase) {
+            // Don't need any case
+            do {
+                MatchChar  = *MatchPtr;
+                SearchChar = *SearchPtr;
+                if (MatchChar != SearchChar) {
+                    Status = STATUS_NOT_FOUND;
+                    break;
+                }
+                else {
+                    MatchPtr--;
+                    SearchPtr--;
+                    if (SearchPtr <= SearchString) {
+                        FLT_ASSERT(MatchPtr >= MatchString);
+                        *IndexOf = (LONG)((MatchPtr - MatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchPtr >= MatchString);
+                    FLT_ASSERT(MatchPtr < (MatchString + MatchLength));
+                }
+            } while (1);
+        }
+        else if (SearchStringIsDowncase) {
+            // Search string is downcase already.
+            do {
+                MatchChar  = __InlineDowncaseUnicodeChar(*MatchPtr);
+                SearchChar = *SearchPtr;
+                if (MatchChar != SearchChar) {
+                    Status = STATUS_NOT_FOUND;
+                    break;
+                }
+                else {
+                    MatchPtr--;
+                    SearchPtr--;
+                    if (SearchPtr <= SearchString) {
+                        FLT_ASSERT(MatchPtr >= MatchString);
+                        *IndexOf = (LONG)((MatchPtr - MatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchPtr >= MatchString);
+                    FLT_ASSERT(MatchPtr < (MatchString + MatchLength));
+                }
+            } while (1);
+        }
+        else if (SearchStringIsUpcase) {
+            // Search string is upcase already.
+            do {
+                MatchChar  = __InlineUpcaseUnicodeChar(*MatchPtr);
+                SearchChar = *SearchPtr;
+                if (MatchChar != SearchChar) {
+                    Status = STATUS_NOT_FOUND;
+                    break;
+                }
+                else {
+                    MatchPtr--;
+                    SearchPtr--;
+                    if (SearchPtr <= SearchString) {
+                        FLT_ASSERT(MatchPtr >= MatchString);
+                        *IndexOf = (LONG)((MatchPtr - MatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchPtr >= MatchString);
+                    FLT_ASSERT(MatchPtr < (MatchString + MatchLength));
+                }
+            } while (1);
+        }
+        else {
+            // String compare is case insensitive, CaseInSensitive is TRUE.
+            do {
+                MatchChar  = __InlineUpcaseUnicodeChar(*MatchPtr);
+                SearchChar = __InlineUpcaseUnicodeChar(*SearchPtr);
+                if (MatchChar != SearchChar) {
+                    Status = STATUS_NOT_FOUND;
+                    break;
+                }
+                else {
+                    MatchPtr--;
+                    SearchPtr--;
+                    if (SearchPtr <= SearchString) {
+                        FLT_ASSERT(MatchPtr >= MatchString);
+                        *IndexOf = (LONG)((MatchPtr - MatchString) * sizeof(WCHAR));
+                        Status = STATUS_SUCCESS;
+                        break;
+                    }
+                    FLT_ASSERT(MatchPtr >= MatchString);
+                    FLT_ASSERT(MatchPtr < (MatchString + MatchLength));
+                }
+            } while (1);
+        }
+    }
+    else {
+        Status = STATUS_INVALID_PARAMETER;
+        goto Cleanup;
+    }
+
+Cleanup:
+    return Status;
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 /***

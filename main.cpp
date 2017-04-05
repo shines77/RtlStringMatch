@@ -422,6 +422,39 @@ void BoyerMoore_PerformanceTest()
     RtlFreeUnicodeString(&usSearchName);
 }
 
+void RtlUnicodeCharFastSearch_PerformanceTest()
+{
+    UNICODE_STRING usFullPath, usSearchName;
+    StopWatch sw;
+    LONG IndexOf = 0, Sum, n, i;
+    int index;
+
+    RtlAllocateUnicodeString(&usFullPath, MAX_PATH * sizeof(WCHAR));
+    RtlAllocateUnicodeString(&usSearchName, MAX_PATH * sizeof(WCHAR));
+
+    for (n = 0; n < sizeof(szSearchName) / sizeof(WCHAR *); ++n) {
+        RtlCopyUnicodeStringFromChar(&usFullPath, szFullPath);
+        RtlCopyUnicodeStringFromChar(&usSearchName, szSearchName[n]);
+
+        Sum = 0;
+        sw.start();
+        for (i = 0; i < Iteration; ++i) {
+            index = RtlUnicodeCharFastSearch(usFullPath.Buffer, usFullPath.Length / sizeof(WCHAR),
+                usSearchName.Buffer, usSearchName.Length / sizeof(WCHAR), RTL_CASE_SENSITIVE, &IndexOf);
+            noif(NT_SUCCESS(Status) || (Status == STATUS_NOT_FOUND)) {
+                Sum += IndexOf;
+            }
+        }
+        sw.stop();
+
+        printf("[%2d] - CaseSensitive: Yes, Iter: %d, Sum: %10d, Time Spent: %8.3f ms\n",
+            n, Iteration, Sum, sw.getElapsedMillisec());
+    }
+
+    RtlFreeUnicodeString(&usFullPath);
+    RtlFreeUnicodeString(&usSearchName);
+}
+
 void UnicodeString_IndexOf_UnitTest()
 {
     printf("UnitTest:\n\n");
@@ -475,6 +508,10 @@ void UnicodeString_IndexOf_PerformanceTest()
 
     printf("BoyerMoore():\n\n");
     BoyerMoore_PerformanceTest();
+    printf("\n");
+
+    printf("RtlUnicodeCharFastSearch():\n\n");
+    RtlUnicodeCharFastSearch_PerformanceTest();
     printf("\n");
 }
 

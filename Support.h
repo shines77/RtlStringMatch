@@ -163,14 +163,22 @@ typedef struct _UNICODE_STRING {
 
 #define RTL_CASE_INSENSITIVE            0x00000000UL
 #define RTL_CASE_SENSITIVE              0x00000001UL
-#define RTL_SEARCH_STRING_IS_DOWNCASE   0x00000002UL
-#define RTL_SEARCH_STRING_IS_UPCASE     0x00000004UL
-#define RTL_MATCH_STRING_IS_DOWNCASE    0x00000008UL
-#define RTL_MATCH_STRING_IS_UPCASE      0x00000010UL
-#define RTL_REVERSE_SEARCH              0x00000020UL
+#define RTL_REVERSE_SEARCH              0x00000002UL
+
+#define RTL_MATCH_STRING_CASE_MASK      0x00010001UL
+#define RTL_MATCH_STRING_IS_DOWNCASE    0x00010000UL
+#define RTL_MATCH_STRING_IS_UPCASE      0x00010001UL
+
+#define RTL_SEARCH_STRING_CASE_MASK     0x00020001UL
+#define RTL_SEARCH_STRING_IS_DOWNCASE   0x00020000UL
+#define RTL_SEARCH_STRING_IS_UPCASE     0x00020001UL
+
+#define RTL_STRING_CASE_MASK            (RTL_MATCH_STRING_CASE_MASK | RTL_SEARCH_STRING_CASE_MASK)
 
 #define RTL_INDEXOF_DEFAULT \
     (RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH)
+
+////////////////////////////////////////////////////////////////////////
 
 EXTERN_C_START
 
@@ -450,6 +458,19 @@ FIT_NTAPI
 RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
     _In_ CONST WCHAR * SourceString
+    );
+
+////////////////////////////////////////////////////////////////////////
+
+NTSTATUS
+FIT_NTAPI
+RtlUnicodeCharFastSearch(
+    _In_ PWCHAR MatchString,
+    _In_ ULONG MatchLength,
+    _In_ PWCHAR SearchString,
+    _In_ ULONG SearchLength,
+    _In_ ULONG Flags,
+    _Inout_ PLONG IndexOf
     );
 
 ////////////////////////////////////////////////////////////////////////
