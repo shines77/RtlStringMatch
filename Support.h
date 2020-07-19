@@ -165,15 +165,15 @@ typedef struct _UNICODE_STRING {
 #define RTL_CASE_SENSITIVE              0x00000001UL
 #define RTL_REVERSE_SEARCH              0x00000002UL
 
-#define RTL_MATCH_STRING_CASE_MASK      0x00010001UL
-#define RTL_MATCH_STRING_IS_DOWNCASE    0x00010000UL
-#define RTL_MATCH_STRING_IS_UPCASE      0x00010001UL
+#define RTL_SOURCE_STRING_CASE_MASK     0x00010001UL
+#define RTL_SOURCE_STRING_IS_DOWNCASE   0x00010000UL
+#define RTL_SOURCE_STRING_IS_UPCASE     0x00010001UL
 
-#define RTL_SEARCH_STRING_CASE_MASK     0x00020001UL
-#define RTL_SEARCH_STRING_IS_DOWNCASE   0x00020000UL
-#define RTL_SEARCH_STRING_IS_UPCASE     0x00020001UL
+#define RTL_TARGET_STRING_CASE_MASK     0x00020001UL
+#define RTL_TARGET_STRING_IS_DOWNCASE   0x00020000UL
+#define RTL_TARGET_STRING_IS_UPCASE     0x00020001UL
 
-#define RTL_STRING_CASE_MASK            (RTL_MATCH_STRING_CASE_MASK | RTL_SEARCH_STRING_CASE_MASK)
+#define RTL_STRING_CASE_MASK            (RTL_SOURCE_STRING_CASE_MASK | RTL_TARGET_STRING_CASE_MASK)
 
 #define RTL_INDEXOF_DEFAULT \
     (RTL_CASE_INSENSITIVE | RTL_REVERSE_SEARCH)
@@ -243,8 +243,8 @@ FitRtlDowncaseUnicodeChar(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharInUnicodeChar(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ WCHAR TargetChar,
     _In_ BOOLEAN CaseInSensitive,
     _Inout_ PLONG IndexOf
@@ -253,7 +253,7 @@ RtlFindCharInUnicodeChar(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharInUnicodeString(
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ WCHAR TargetChar,
     _In_ BOOLEAN CaseInSensitive,
     _Inout_ PLONG IndexOf
@@ -264,8 +264,8 @@ RtlFindCharInUnicodeString(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharsInUnicodeChar(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetChars,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -277,8 +277,8 @@ RtlFindCharsInUnicodeChar(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -288,7 +288,7 @@ RtlUnicodeCharIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharWithIndexOf(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -298,8 +298,8 @@ RtlUnicodeCharWithIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringWithIndexOf(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
@@ -308,7 +308,7 @@ RtlUnicodeStringWithIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf(
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
@@ -325,8 +325,8 @@ Prepare_KMP2_Next(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -337,7 +337,7 @@ RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
@@ -347,8 +347,8 @@ RtlUnicodeStringIndexOf_KMP2_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -359,7 +359,7 @@ RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
@@ -369,7 +369,7 @@ RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(
 ////////////////////////////////////////////////////////////////////////
 
 LONG *
-Prepare_KMP_PartialPatternTable(
+Prepare_KMP_PartialSourceTable(
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength
     );
@@ -383,8 +383,8 @@ Prepare_KMP_Next(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -395,7 +395,7 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
@@ -407,8 +407,8 @@ RtlUnicodeStringIndexOf_KMP_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -418,7 +418,7 @@ RtlUnicodeCharIndexOf_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
@@ -430,7 +430,7 @@ VOID
 FIT_NTAPI
 RtlInitUnicodeString(
     _Out_ PUNICODE_STRING DestString,
-    _In_opt_z_ PCWSTR PatternString
+    _In_opt_z_ PCWSTR SourceString
     );
 
 VOID
@@ -450,14 +450,14 @@ VOID
 FIT_NTAPI
 RtlCopyUnicodeString(
     _Inout_ PUNICODE_STRING DestString,
-    _In_ PUNICODE_STRING PatternString
+    _In_ PUNICODE_STRING SourceString
     );
 
 VOID
 FIT_NTAPI
 RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
-    _In_ CONST WCHAR * PatternString
+    _In_ CONST WCHAR * SourceString
     );
 
 ////////////////////////////////////////////////////////////////////////
@@ -465,8 +465,8 @@ RtlCopyUnicodeStringFromChar(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharFastSearch(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,

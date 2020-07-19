@@ -119,18 +119,18 @@ FitRtlDowncaseUnicodeChar(
 FIT_FORCE_INLINE
 NTSTATUS
 __RtlFindCharInUnicodeChar(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ WCHAR TargetChar,
     _In_ BOOLEAN CaseInSensitive,
     _Inout_ PLONG IndexOf
     )
 {
     USHORT i;
-    WCHAR PatternChar;
+    WCHAR SourceChar;
     NTSTATUS Status = STATUS_NOT_FOUND;
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(IndexOf != NULL);
 
     *IndexOf = -1;
@@ -138,17 +138,17 @@ __RtlFindCharInUnicodeChar(
     if (CaseInSensitive) {
         TargetChar = __InlineUpcaseUnicodeChar(TargetChar);
     }
-    for (i = 0; i < PatternLength; ++i) {
-        PatternChar = PatternString[i];
+    for (i = 0; i < SourceLength; ++i) {
+        SourceChar = SourceString[i];
         if (CaseInSensitive) {
-            PatternChar = __InlineUpcaseUnicodeChar(PatternChar);
+            SourceChar = __InlineUpcaseUnicodeChar(SourceChar);
         }
-        if (TargetChar == PatternChar) {
+        if (TargetChar == SourceChar) {
             *IndexOf = (LONG)(i * sizeof(WCHAR));
             Status = STATUS_SUCCESS;
             break;
         }
-        if (PatternChar == L'\0')
+        if (SourceChar == L'\0')
             break;
     }
 
@@ -158,8 +158,8 @@ __RtlFindCharInUnicodeChar(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharInUnicodeChar(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ WCHAR TargetChar,
     _In_ BOOLEAN CaseInSensitive,
     _Inout_ PLONG IndexOf
@@ -167,18 +167,18 @@ RtlFindCharInUnicodeChar(
 {
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
 
     if (IndexOf == NULL) {
         return STATUS_INVALID_PARAMETER;
     }
 
-    if (PatternString != NULL) {
+    if (SourceString != NULL) {
         return STATUS_INVALID_PARAMETER;
     }
 
-    return __RtlFindCharInUnicodeChar(PatternString,
-                                      PatternLength,
+    return __RtlFindCharInUnicodeChar(SourceString,
+                                      SourceLength,
                                       TargetChar,
                                       CaseInSensitive,
                                       IndexOf);
@@ -187,13 +187,13 @@ RtlFindCharInUnicodeChar(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharInUnicodeString(
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ WCHAR TargetChar,
     _In_ BOOLEAN CaseInSensitive,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlFindCharInUnicodeChar(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlFindCharInUnicodeChar(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                     TargetChar,
                                     CaseInSensitive, IndexOf);
 }
@@ -218,8 +218,8 @@ RtlFindCharInUnicodeString(
 NTSTATUS
 FIT_NTAPI
 RtlFindCharsInUnicodeChar(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetChars,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -235,7 +235,7 @@ RtlFindCharsInUnicodeChar(
     RTL_PAGED_CODE();
 
     FLT_ASSERT(TargetChars != NULL);
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
 
     if (IndexOf == NULL) {
         Status = STATUS_INVALID_PARAMETER;
@@ -245,15 +245,15 @@ RtlFindCharsInUnicodeChar(
     *IndexOf = -1;
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength || TargetLength <= 0) {
+    if (SourceLength < TargetLength || TargetLength <= 0) {
         goto Cleanup;
     }
 
-    if ((ULONG_PTR)TargetChars & (ULONG_PTR)PatternString) {
+    if ((ULONG_PTR)TargetChars & (ULONG_PTR)SourceString) {
         for (i = 0; i < TargetLength; ++i) {
             // Call this function inline version.
-            FindStatus = __RtlFindCharInUnicodeChar(PatternString,
-                                                    PatternLength,
+            FindStatus = __RtlFindCharInUnicodeChar(SourceString,
+                                                    SourceLength,
                                                     TargetChars[i],
                                                     CaseInSensitive,
                                                     &IndexOfChar);
@@ -284,8 +284,8 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -297,18 +297,18 @@ RtlUnicodeCharIndexOf(
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR TargetStringEnd;
-    PWCHAR PatternStringStart, PatternStringEnd;
-    PWCHAR TargetStringFirst, PatternStringFirst;
-    WCHAR TargetChar, PatternChar;
+    PWCHAR SourceStringStart, SourceStringEnd;
+    PWCHAR TargetStringFirst, SourceStringFirst;
+    WCHAR TargetChar, SourceChar;
 #if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
-    PWCHAR NewTargetString = NULL, NewPatternString = NULL;
-    PWCHAR Dest, Pattern;
+    PWCHAR NewTargetString = NULL, NewSourceString = NULL;
+    PWCHAR Dest, Source;
     ULONG i;
 #endif
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -325,103 +325,103 @@ RtlUnicodeCharIndexOf(
     }
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength) {
+    if (SourceLength < TargetLength) {
         goto Cleanup;
     }
 
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if ((ULONG_PTR)TargetString & (ULONG_PTR)PatternString) {
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if ((ULONG_PTR)TargetString & (ULONG_PTR)SourceString) {
 #if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
         if (CaseInSensitive) {
-            NewPatternString = (PWCHAR)RTL_MALLOC((PatternLength + 1) * sizeof(WCHAR));
-            Dest    = NewPatternString;
-            Pattern = PatternString;
-            for (i = 0; i < PatternLength; ++i) {
-                *Dest++ = __InlineDowncaseUnicodeChar(*Pattern++);
+            NewSourceString = (PWCHAR)RTL_MALLOC((SourceLength + 1) * sizeof(WCHAR));
+            Dest    = NewSourceString;
+            Source = SourceString;
+            for (i = 0; i < SourceLength; ++i) {
+                *Dest++ = __InlineDowncaseUnicodeChar(*Source++);
             }
             *Dest = UNICODE_NULL;
             NewTargetString = (PWCHAR)RTL_MALLOC((TargetLength + 1) * sizeof(WCHAR));
             Dest    = NewTargetString;
-            Pattern = TargetString;
+            Source = TargetString;
             for (i = 0; i < TargetLength; ++i) {
-                *Dest++ = __InlineDowncaseUnicodeChar(*Pattern++);
+                *Dest++ = __InlineDowncaseUnicodeChar(*Source++);
             }
             *Dest = UNICODE_NULL;
-            PatternString = NewPatternString;
+            SourceString = NewSourceString;
             TargetString  = NewTargetString;
         }
 #endif // USE_MALLOC_AND_UPDOWN_CASE
         TargetStringFirst  = TargetString;
-        PatternStringFirst = PatternString;
+        SourceStringFirst  = SourceString;
         TargetStringEnd    = TargetString + TargetLength;
         if (IsReverseSearch) {
             // Reverse search
-            PatternStringStart = PatternString + (PatternLength - TargetLength);
-            PatternStringEnd   = PatternString;
-            PatternString      = PatternStringStart;
+            SourceStringStart = SourceString + (SourceLength - TargetLength);
+            SourceStringEnd   = SourceString;
+            SourceString      = SourceStringStart;
             do {
-                PatternChar = *PatternString;
+                SourceChar = *SourceString;
                 TargetChar  = *TargetString;
 #if !defined(USE_MALLOC_AND_UPDOWN_CASE) || (USE_MALLOC_AND_UPDOWN_CASE == 0)
                 if (CaseInSensitive) {
-                    PatternChar = __InlineDowncaseUnicodeChar(PatternChar);
+                    SourceChar = __InlineDowncaseUnicodeChar(SourceChar);
                     TargetChar  = __InlineDowncaseUnicodeChar(TargetChar);
                 }
 #endif // !USE_MALLOC_AND_UPDOWN_CASE
-                if (TargetChar != PatternChar) {
-                    PatternStringStart--;
-                    if (PatternStringStart < PatternStringEnd) {
+                if (TargetChar != SourceChar) {
+                    SourceStringStart--;
+                    if (SourceStringStart < SourceStringEnd) {
                         Status = STATUS_NOT_FOUND;
                         break;
                     }
-                    PatternString = PatternStringStart;
-                    TargetString  = TargetStringFirst;
+                    SourceString = SourceStringStart;
+                    TargetString = TargetStringFirst;
                 }
                 else {
-                    PatternString++;
+                    SourceString++;
                     TargetString++;
                     if (TargetString == TargetStringEnd) {
-                        FLT_ASSERT(PatternStringStart >= PatternStringFirst);
-                        *IndexOf = (LONG)((PatternStringStart - PatternStringFirst) * sizeof(WCHAR));
+                        FLT_ASSERT(SourceStringStart >= SourceStringFirst);
+                        *IndexOf = (LONG)((SourceStringStart - SourceStringFirst) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternString < (PatternStringFirst + PatternLength));
+                    FLT_ASSERT(SourceString < (SourceStringFirst + SourceLength));
                 }
             } while (1);
         }
         else {
             // Forward search
-            PatternStringStart = PatternString;
-            PatternStringEnd   = PatternString + (PatternLength - TargetLength);
+            SourceStringStart = SourceString;
+            SourceStringEnd   = SourceString + (SourceLength - TargetLength);
             do {
-                PatternChar = *PatternString;
-                TargetChar  = *TargetString;
+                SourceChar = *SourceString;
+                TargetChar = *TargetString;
 #if !defined(USE_MALLOC_AND_UPDOWN_CASE) || (USE_MALLOC_AND_UPDOWN_CASE == 0)
                 if (CaseInSensitive) {
-                    PatternChar = __InlineDowncaseUnicodeChar(PatternChar);
+                    SourceChar = __InlineDowncaseUnicodeChar(SourceChar);
                     TargetChar  = __InlineDowncaseUnicodeChar(TargetChar);
                 }
 #endif // !USE_MALLOC_AND_UPDOWN_CASE
-                if (TargetChar != PatternChar) {
-                    PatternStringStart++;
-                    if (PatternStringStart > PatternStringEnd) {
+                if (TargetChar != SourceChar) {
+                    SourceStringStart++;
+                    if (SourceStringStart > SourceStringEnd) {
                         Status = STATUS_NOT_FOUND;
                         break;
                     }
-                    PatternString = PatternStringStart;
-                    TargetString  = TargetStringFirst;
+                    SourceString = SourceStringStart;
+                    TargetString = TargetStringFirst;
                 }
                 else {
-                    PatternString++;
+                    SourceString++;
                     TargetString++;
                     if (TargetString == TargetStringEnd) {
-                        FLT_ASSERT(PatternStringStart >= PatternStringFirst);
-                        *IndexOf = (LONG)((PatternStringStart - PatternStringFirst) * sizeof(WCHAR));
+                        FLT_ASSERT(SourceStringStart >= SourceStringFirst);
+                        *IndexOf = (LONG)((SourceStringStart - SourceStringFirst) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternString < (PatternStringFirst + PatternLength));
+                    FLT_ASSERT(SourceString < (SourceStringFirst + SourceLength));
                 }
             } while (1);
         }
@@ -434,8 +434,8 @@ RtlUnicodeCharIndexOf(
 Cleanup:
 #if defined(USE_MALLOC_AND_UPDOWN_CASE) && (USE_MALLOC_AND_UPDOWN_CASE != 0)
     if (CaseInSensitive) {
-        if (NewPatternString != NULL) {
-            RTL_FREE(NewPatternString);
+        if (NewSourceString != NULL) {
+            RTL_FREE(NewSourceString);
         }
         if (NewTargetString != NULL) {
             RTL_FREE(NewTargetString);
@@ -448,14 +448,14 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharWithIndexOf(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                  TargetString, TargetLength,
                                  Flags, IndexOf);
 }
@@ -463,14 +463,14 @@ RtlUnicodeCharWithIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringWithIndexOf(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf(PatternString, PatternLength,
+    return RtlUnicodeCharIndexOf(SourceString, SourceLength,
                                  TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                  Flags, IndexOf);
 }
@@ -478,13 +478,13 @@ RtlUnicodeStringWithIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                  TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                  Flags, IndexOf);
 }
@@ -494,8 +494,8 @@ RtlUnicodeStringIndexOf(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -506,12 +506,12 @@ RtlUnicodeCharIndexOf_CaseSensitive(
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR TargetStringEnd;
-    PWCHAR PatternStringStart, PatternStringEnd;
-    PWCHAR TargetStringFirst, PatternStringFirst;
+    PWCHAR SourceStringStart, SourceStringEnd;
+    PWCHAR TargetStringFirst, SourceStringFirst;
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -528,67 +528,67 @@ RtlUnicodeCharIndexOf_CaseSensitive(
     }
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength) {
+    if (SourceLength < TargetLength) {
         goto Cleanup;
     }
 
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if ((ULONG_PTR)TargetString & (ULONG_PTR)PatternString) {
-        TargetStringFirst  = TargetString;
-        PatternStringFirst = PatternString;
-        TargetStringEnd    = TargetString + TargetLength;
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if ((ULONG_PTR)TargetString & (ULONG_PTR)SourceString) {
+        TargetStringFirst = TargetString;
+        SourceStringFirst = SourceString;
+        TargetStringEnd   = TargetString + TargetLength;
         if (IsReverseSearch) {
             // Reverse search
-            PatternStringStart = PatternString + (PatternLength - TargetLength);
-            PatternStringEnd   = PatternString;
-            PatternString      = PatternStringStart;
+            SourceStringStart = SourceString + (SourceLength - TargetLength);
+            SourceStringEnd   = SourceString;
+            SourceString      = SourceStringStart;
             do {
-                if (*TargetString != *PatternString) {
-                    PatternStringStart--;
-                    if (PatternStringStart < PatternStringEnd) {
+                if (*TargetString != *SourceString) {
+                    SourceStringStart--;
+                    if (SourceStringStart < SourceStringEnd) {
                         Status = STATUS_NOT_FOUND;
                         break;
                     }
-                    PatternString = PatternStringStart;
-                    TargetString  = TargetStringFirst;
+                    SourceString = SourceStringStart;
+                    TargetString = TargetStringFirst;
                 }
                 else {
-                    PatternString++;
+                    SourceString++;
                     TargetString++;
                     if (TargetString == TargetStringEnd) {
-                        FLT_ASSERT(PatternStringStart >= PatternStringFirst);
-                        *IndexOf = (LONG)((PatternStringStart - PatternStringFirst) * sizeof(WCHAR));
+                        FLT_ASSERT(SourceStringStart >= SourceStringFirst);
+                        *IndexOf = (LONG)((SourceStringStart - SourceStringFirst) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternString < (PatternStringFirst + PatternLength));
+                    FLT_ASSERT(SourceString < (SourceStringFirst + SourceLength));
                 }
             } while (1);
         }
         else {
             // Forward search
-            PatternStringStart = PatternString;
-            PatternStringEnd   = PatternString + (PatternLength - TargetLength);
+            SourceStringStart = SourceString;
+            SourceStringEnd   = SourceString + (SourceLength - TargetLength);
             do {
-                if (*TargetString != *PatternString) {
-                    PatternStringStart++;
-                    if (PatternStringStart > PatternStringEnd) {
+                if (*TargetString != *SourceString) {
+                    SourceStringStart++;
+                    if (SourceStringStart > SourceStringEnd) {
                         Status = STATUS_NOT_FOUND;
                         break;
                     }
-                    PatternString = PatternStringStart;
-                    TargetString  = TargetStringFirst;
+                    SourceString = SourceStringStart;
+                    TargetString = TargetStringFirst;
                 }
                 else {
-                    PatternString++;
+                    SourceString++;
                     TargetString++;
                     if (TargetString == TargetStringEnd) {
-                        FLT_ASSERT(PatternStringStart >= PatternStringFirst);
-                        *IndexOf = (LONG)((PatternStringStart - PatternStringFirst) * sizeof(WCHAR));
+                        FLT_ASSERT(SourceStringStart >= SourceStringFirst);
+                        *IndexOf = (LONG)((SourceStringStart - SourceStringFirst) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternString < (PatternStringFirst + PatternLength));
+                    FLT_ASSERT(SourceString < (SourceStringFirst + SourceLength));
                 }
             } while (1);
         }
@@ -605,13 +605,13 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf_CaseSensitive(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf_CaseSensitive(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                                TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                                Flags, IndexOf);
 }
@@ -663,8 +663,8 @@ Prepare_KMP2_Next(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -674,14 +674,14 @@ RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
 {
     NTSTATUS Status = STATUS_NOT_FOUND;
 
-    PWCHAR SavePatternString, PatternStringEnd;
-    WCHAR PatternChar;
-    LONG TargetIndex, PatternIndex;
+    PWCHAR SourceStringFirst, SourceStringEnd;
+    WCHAR SourceChar;
+    LONG TargetIndex, SourceIndex;
 //    LONG * KmpNext = NULL;
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -698,39 +698,39 @@ RtlUnicodeCharIndexOf_KMP2_CaseSensitive(
     }
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength) {
+    if (SourceLength < TargetLength) {
         goto Cleanup;
     }
 
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if ((ULONG_PTR)TargetString & (ULONG_PTR)PatternString) {
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if ((ULONG_PTR)TargetString & (ULONG_PTR)SourceString) {
 #if 0
         // Prepare the partial match table.
         KmpNext = Prepare_KMP_Next(TargetString, TargetLength);
         FLT_ASSERT(KmpNext != NULL);
 #endif
-        SavePatternString = PatternString;
-        PatternStringEnd  = PatternString + PatternLength;
+        SourceStringFirst = SourceString;
+        SourceStringEnd   = SourceString + SourceLength;
 
         // Start search ...
         TargetIndex = 0;
         do {
-            PatternChar = *PatternString;
-            while (TargetString[TargetIndex] != PatternChar) {
+            SourceChar = *SourceString;
+            while (TargetString[TargetIndex] != SourceChar) {
                 TargetIndex = KmpNext[TargetIndex];
                 if (TargetIndex < 0) {
                     break;
                 }
             }
             TargetIndex++;
-            PatternString++;
+            SourceString++;
             if (TargetIndex >= (LONG)TargetLength) {
-                PatternIndex = (LONG)(PatternString - SavePatternString);
-                *IndexOf = (LONG)((PatternIndex - TargetIndex) * sizeof(WCHAR));
+                SourceIndex = (LONG)(SourceString - SourceStringFirst);
+                *IndexOf = (LONG)((SourceIndex - TargetIndex) * sizeof(WCHAR));
                 Status = STATUS_SUCCESS;
                 break;
             }            
-        } while (PatternString < PatternStringEnd);
+        } while (SourceString < SourceStringEnd);
     }
     else {
         Status = STATUS_INVALID_PARAMETER;
@@ -749,14 +749,14 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP2_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf_KMP2_CaseSensitive(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf_KMP2_CaseSensitive(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                                     TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                                     KmpNext, Flags, IndexOf);
 }
@@ -766,8 +766,8 @@ RtlUnicodeStringIndexOf_KMP2_CaseSensitive(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -777,12 +777,12 @@ RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
 {
     NTSTATUS Status = STATUS_NOT_FOUND;
 
-    LONG TargetIndex, PatternIndex;
+    LONG TargetIndex, SourceIndex;
     //LONG * KmpNext = NULL;
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -799,12 +799,12 @@ RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
     }
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength) {
+    if (SourceLength < TargetLength) {
         goto Cleanup;
     }
 
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if ((ULONG_PTR)TargetString & (ULONG_PTR)PatternString) {
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if ((ULONG_PTR)TargetString & (ULONG_PTR)SourceString) {
 #if 0
         // Prepare the partial match table.
         KmpNext = Prepare_KMP_Next(TargetString, TargetLength);
@@ -812,15 +812,15 @@ RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(
 #endif
 
         // Start search ...
-        TargetIndex = PatternIndex = 0;
-        while (PatternIndex < (LONG)PatternLength) {
-            while ((TargetIndex >= 0) && (TargetString[TargetIndex] != PatternString[PatternIndex])) {
+        TargetIndex = SourceIndex = 0;
+        while (SourceIndex < (LONG)SourceLength) {
+            while ((TargetIndex >= 0) && (TargetString[TargetIndex] != SourceString[SourceIndex])) {
                 TargetIndex = KmpNext[TargetIndex];
             }
             TargetIndex++;
-            PatternIndex++;
+            SourceIndex++;
             if (TargetIndex >= (LONG)TargetLength) {
-                *IndexOf = (LONG)((PatternIndex - TargetIndex) * sizeof(WCHAR));
+                *IndexOf = (LONG)((SourceIndex - TargetIndex) * sizeof(WCHAR));
                 Status = STATUS_SUCCESS;
                 break;
             }
@@ -843,14 +843,14 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf_KMP2a_CaseSensitive(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                                      TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                                      KmpNext, Flags, IndexOf);
 }
@@ -858,19 +858,19 @@ RtlUnicodeStringIndexOf_KMP2a_CaseSensitive(
 ////////////////////////////////////////////////////////////////////////
 
 LONG *
-Prepare_KMP_PartialPatternTable(
+Prepare_KMP_PartialSourceTable(
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength
     )
 {
-    LONG * PatternTable;
+    LONG * SourceTable;
     ULONG max_comm_len;
     BOOLEAN is_equal;
     WCHAR * prefix, * suffix;
     ULONG step_len, cmp_len, i;
-    PatternTable = RTL_MALLOC(TargetLength * sizeof(LONG));
-    if (PatternTable != NULL) {
-        PatternTable[0] = 0;
+    SourceTable = RTL_MALLOC(TargetLength * sizeof(LONG));
+    if (SourceTable != NULL) {
+        SourceTable[0] = 0;
         for (step_len = 2; step_len <= TargetLength; ++step_len) {
             max_comm_len = 0;
             for (cmp_len = 1; cmp_len < step_len; ++cmp_len) {
@@ -889,10 +889,10 @@ Prepare_KMP_PartialPatternTable(
                     max_comm_len = cmp_len;
                 }
             }
-            PatternTable[step_len - 1] = max_comm_len;
+            SourceTable[step_len - 1] = max_comm_len;
         }
     }
-    return PatternTable;
+    return SourceTable;
 }
 
 LONG *
@@ -932,8 +932,8 @@ Prepare_KMP_Next(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharIndexOf_KMP_CaseSensitive(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ LONG * KmpNext,
@@ -945,14 +945,14 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
     NTSTATUS Status = STATUS_NOT_FOUND;
 
     PWCHAR TargetStringEnd;
-    PWCHAR PatternStringStart, PatternStringEnd;
-    PWCHAR TargetStringFirst, PatternStringFirst;
-    WCHAR TargetChar, PatternChar;
+    PWCHAR SourceStringStart, SourceStringEnd;
+    PWCHAR TargetStringFirst, SourceStringFirst;
+    WCHAR TargetChar, SourceChar;
 //    LONG * KmpNext = NULL;
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -969,34 +969,34 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
     }
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength) {
+    if (SourceLength < TargetLength) {
         goto Cleanup;
     }
 
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if ((ULONG_PTR)TargetString & (ULONG_PTR)PatternString) {
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if ((ULONG_PTR)TargetString & (ULONG_PTR)SourceString) {
 #if 0
         // Prepare the partial match table.
         KmpNext = Prepare_KMP_Next(TargetString, TargetLength);
 #endif
 
         // Save the original values.
-        TargetStringFirst  = TargetString;
-        PatternStringFirst = PatternString;
-        TargetStringEnd    = TargetString + TargetLength;
+        TargetStringFirst = TargetString;
+        SourceStringFirst = SourceString;
+        TargetStringEnd   = TargetString + TargetLength;
 
         if (!IsReverseSearch || TRUE) {
             // Forward search
-            PatternStringStart = PatternString;
-            PatternStringEnd   = PatternString + (PatternLength - TargetLength);
+            SourceStringStart = SourceString;
+            SourceStringEnd   = SourceString + (SourceLength - TargetLength);
             do {
-                PatternChar = *PatternString;
-                TargetChar  = *TargetString;
-                if (TargetChar != PatternChar) {
+                SourceChar = *SourceString;
+                TargetChar = *TargetString;
+                if (TargetChar != SourceChar) {
                     if (TargetString == TargetStringFirst) {
-                        PatternString++;
-                        PatternStringStart++;
-                        if (PatternStringStart > PatternStringEnd) {
+                        SourceString++;
+                        SourceStringStart++;
+                        if (SourceStringStart > SourceStringEnd) {
                             Status = STATUS_NOT_FOUND;
                             break;
                         }
@@ -1008,24 +1008,24 @@ RtlUnicodeCharIndexOf_KMP_CaseSensitive(
                         LONG Offset = TargetIndex - TargetOffset;
                         FLT_ASSERT(Offset >= 1);
                         TargetString = TargetStringFirst + TargetOffset;
-                        PatternStringStart += Offset;
-                        PatternString  = PatternStringStart;
-                        if (PatternStringStart > PatternStringEnd) {
+                        SourceStringStart += Offset;
+                        SourceString  = SourceStringStart;
+                        if (SourceStringStart > SourceStringEnd) {
                             Status = STATUS_NOT_FOUND;
                             break;
                         }
                     }
                 }
                 else {
-                    PatternString++;
+                    SourceString++;
                     TargetString++;
                     if (TargetString == TargetStringEnd) {
-                        FLT_ASSERT(PatternStringStart >= PatternStringFirst);
-                        *IndexOf = (LONG)((PatternStringStart - PatternStringFirst) * sizeof(WCHAR));
+                        FLT_ASSERT(SourceStringStart >= SourceStringFirst);
+                        *IndexOf = (LONG)((SourceStringStart - SourceStringFirst) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternString < (PatternStringFirst + PatternLength));
+                    FLT_ASSERT(SourceString < (SourceStringFirst + SourceLength));
                 }
             } while (1);
         }
@@ -1050,14 +1050,14 @@ Cleanup:
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeStringIndexOf_KMP_CaseSensitive(    
-    _In_ PUNICODE_STRING PatternString,
+    _In_ PUNICODE_STRING SourceString,
     _In_ PUNICODE_STRING TargetString,
     _In_ LONG * KmpNext,
     _In_ ULONG Flags,
     _Inout_ PLONG IndexOf
     )
 {
-    return RtlUnicodeCharIndexOf_KMP_CaseSensitive(PatternString->Buffer, PatternString->Length / sizeof(WCHAR),
+    return RtlUnicodeCharIndexOf_KMP_CaseSensitive(SourceString->Buffer, SourceString->Length / sizeof(WCHAR),
                                                    TargetString->Buffer, TargetString->Length / sizeof(WCHAR),
                                                    KmpNext, Flags, IndexOf);
 }
@@ -1068,12 +1068,12 @@ VOID
 FIT_NTAPI
 RtlInitUnicodeString(
     _Out_ PUNICODE_STRING DestString,
-    _In_opt_z_ PCWSTR PatternString
+    _In_opt_z_ PCWSTR SourceString
     )
 {
-    DestString->Length = (USHORT)(wcslen(PatternString) * sizeof(WCHAR));
-    DestString->MaximumLength = (USHORT)((wcslen(PatternString) + 1) * sizeof(WCHAR));
-    DestString->Buffer = (PWCHAR)PatternString;
+    DestString->Length = (USHORT)(wcslen(SourceString) * sizeof(WCHAR));
+    DestString->MaximumLength = (USHORT)((wcslen(SourceString) + 1) * sizeof(WCHAR));
+    DestString->Buffer = (PWCHAR)SourceString;
 }
 
 VOID
@@ -1106,23 +1106,23 @@ VOID
 FIT_NTAPI
 RtlCopyUnicodeString(
     _Inout_ PUNICODE_STRING DestString,
-    _In_ PUNICODE_STRING PatternString
+    _In_ PUNICODE_STRING SourceString
     )
 {
-    ULONG PatternLength;
-    if (PatternString == NULL) {
+    ULONG SourceLength;
+    if (SourceString == NULL) {
         DestString->Length = 0;
     }
     else {
-        PatternLength = FIT_MIN(DestString->MaximumLength, PatternString->Length);
-        DestString->Length = (USHORT)PatternLength;
+        SourceLength = FIT_MIN(DestString->MaximumLength, SourceString->Length);
+        DestString->Length = (USHORT)SourceLength;
 
         RtlCopyMemory(DestString->Buffer,
-                      PatternString->Buffer,
-                      PatternLength);
+                      SourceString->Buffer,
+                      SourceLength);
 
         if (DestString->Length < DestString->MaximumLength) {
-            DestString->Buffer[PatternLength / sizeof(WCHAR)] = UNICODE_NULL;
+            DestString->Buffer[SourceLength / sizeof(WCHAR)] = UNICODE_NULL;
         }
     }
 }
@@ -1131,21 +1131,21 @@ VOID
 FIT_NTAPI
 RtlCopyUnicodeStringFromChar(
     _Inout_ PUNICODE_STRING DestString,
-    _In_ CONST WCHAR * PatternString
+    _In_ CONST WCHAR * SourceString
     )
 {
-    ULONG PatternLength = (ULONG)(wcslen(PatternString) * sizeof(WCHAR));
-    if (PatternString == NULL) {
+    ULONG SourceLength = (ULONG)(wcslen(SourceString) * sizeof(WCHAR));
+    if (SourceString == NULL) {
         DestString->Length = 0;
     }
     else {
-        PatternLength = FIT_MIN(DestString->MaximumLength, PatternLength);
-        DestString->Length = (USHORT)PatternLength;
+        SourceLength = FIT_MIN(DestString->MaximumLength, SourceLength);
+        DestString->Length = (USHORT)SourceLength;
 
-        RtlCopyMemory(DestString->Buffer, PatternString, PatternLength);
+        RtlCopyMemory(DestString->Buffer, SourceString, SourceLength);
 
         if (DestString->Length < DestString->MaximumLength) {
-            DestString->Buffer[PatternLength / sizeof(WCHAR)] = UNICODE_NULL;
+            DestString->Buffer[SourceLength / sizeof(WCHAR)] = UNICODE_NULL;
         }
     }
 }
@@ -1159,8 +1159,8 @@ RtlCopyUnicodeStringFromChar(
 NTSTATUS
 FIT_NTAPI
 RtlUnicodeCharFastSearch(
-    _In_ PWCHAR PatternString,
-    _In_ ULONG PatternLength,
+    _In_ PWCHAR SourceString,
+    _In_ ULONG SourceLength,
     _In_ PWCHAR TargetString,
     _In_ ULONG TargetLength,
     _In_ ULONG Flags,
@@ -1171,22 +1171,22 @@ RtlUnicodeCharFastSearch(
     CONST BOOLEAN IsReverseSearch = (BOOLEAN)((Flags & RTL_REVERSE_SEARCH) != 0);
     CONST BOOLEAN StringNoAnyCase = (BOOLEAN)((Flags & RTL_STRING_CASE_MASK) == 0);
     
-    CONST BOOLEAN PatternStringNoAnyCase   = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == 0);
-    CONST BOOLEAN PatternStringIsDowncase  = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_DOWNCASE);
-    CONST BOOLEAN PatternStringIsUpcase    = (BOOLEAN)((Flags & RTL_MATCH_STRING_CASE_MASK) == RTL_MATCH_STRING_IS_UPCASE);
+    CONST BOOLEAN SourceStringNoAnyCase   = (BOOLEAN)((Flags & RTL_SOURCE_STRING_CASE_MASK) == 0);
+    CONST BOOLEAN SourceStringIsDowncase  = (BOOLEAN)((Flags & RTL_SOURCE_STRING_CASE_MASK) == RTL_TARGET_STRING_IS_DOWNCASE);
+    CONST BOOLEAN SourceStringIsUpcase    = (BOOLEAN)((Flags & RTL_SOURCE_STRING_CASE_MASK) == RTL_SOURCE_STRING_IS_UPCASE);
 
-    CONST BOOLEAN TargetStringNoAnyCase  = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == 0);
-    CONST BOOLEAN TargetStringIsDowncase = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_DOWNCASE);
-    CONST BOOLEAN TargetStringIsUpcase   = (BOOLEAN)((Flags & RTL_SEARCH_STRING_CASE_MASK) == RTL_SEARCH_STRING_IS_UPCASE);
+    CONST BOOLEAN TargetStringNoAnyCase  = (BOOLEAN)((Flags & RTL_TARGET_STRING_CASE_MASK) == 0);
+    CONST BOOLEAN TargetStringIsDowncase = (BOOLEAN)((Flags & RTL_TARGET_STRING_CASE_MASK) == RTL_TARGET_STRING_IS_DOWNCASE);
+    CONST BOOLEAN TargetStringIsUpcase   = (BOOLEAN)((Flags & RTL_TARGET_STRING_CASE_MASK) == RTL_TARGET_STRING_IS_UPCASE);
 
     NTSTATUS Status = STATUS_NOT_FOUND;
 
-    PWCHAR TargetPtr, PatternPtr;
-    WCHAR  TargetChar, PatternChar;
+    PWCHAR TargetPtr, SourcePtr;
+    WCHAR  TargetChar, SourceChar;
 
     RTL_PAGED_CODE();
 
-    FLT_ASSERT(PatternString != NULL);
+    FLT_ASSERT(SourceString != NULL);
     FLT_ASSERT(TargetString != NULL);
 
     if (IndexOf == NULL) {
@@ -1197,106 +1197,106 @@ RtlUnicodeCharFastSearch(
     *IndexOf = -1;
 
     // The length of a substring is greater than the length of the string being matched.
-    if (PatternLength < TargetLength || TargetLength <= 0) {
+    if (SourceLength < TargetLength || TargetLength <= 0) {
         goto Cleanup;
     }
 
     FLT_ASSERT(TargetLength > 0);
-    FLT_ASSERT(PatternLength >= TargetLength);
-    if (((ULONG_PTR)PatternString & (ULONG_PTR)TargetString) != 0) {
+    FLT_ASSERT(SourceLength >= TargetLength);
+    if (((ULONG_PTR)SourceString & (ULONG_PTR)TargetString) != 0) {
         // Priority reverse search.
-        PatternPtr = PatternString + PatternLength - 1;
+        SourcePtr = SourceString + SourceLength - 1;
         TargetPtr  = TargetString + TargetLength - 1;
         // Start compare the search strings.
         if (!CaseInSensitive || TargetStringNoAnyCase) {
             // Don't need any case
             do {
-                PatternChar = *PatternPtr;
-                TargetChar  = *TargetPtr;
-                if (TargetChar != PatternChar) {
+                SourceChar = *SourcePtr;
+                TargetChar = *TargetPtr;
+                if (TargetChar != SourceChar) {
                     Status = STATUS_NOT_FOUND;
                     break;
                 }
                 else {
-                    PatternPtr--;
+                    SourcePtr--;
                     TargetPtr--;
                     if (TargetPtr <= TargetString) {
-                        FLT_ASSERT(PatternPtr >= PatternString);
-                        *IndexOf = (LONG)((PatternPtr - PatternString) * sizeof(WCHAR));
+                        FLT_ASSERT(SourcePtr >= SourceString);
+                        *IndexOf = (LONG)((SourcePtr - SourceString) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternPtr >= PatternString);
-                    FLT_ASSERT(PatternPtr < (PatternString + PatternLength));
+                    FLT_ASSERT(SourcePtr >= SourceString);
+                    FLT_ASSERT(SourcePtr < (SourceString + SourceLength));
                 }
             } while (1);
         }
         else if (TargetStringIsDowncase) {
             // Target string is downcase already.
             do {
-                PatternChar = __InlineDowncaseUnicodeChar(*PatternPtr);
-                TargetChar  = *TargetPtr;
-                if (TargetChar != PatternChar) {
+                SourceChar = __InlineDowncaseUnicodeChar(*SourcePtr);
+                TargetChar = *TargetPtr;
+                if (TargetChar != SourceChar) {
                     Status = STATUS_NOT_FOUND;
                     break;
                 }
                 else {
-                    PatternPtr--;
+                    SourcePtr--;
                     TargetPtr--;
                     if (TargetPtr <= TargetString) {
-                        FLT_ASSERT(PatternPtr >= PatternString);
-                        *IndexOf = (LONG)((PatternPtr - PatternString) * sizeof(WCHAR));
+                        FLT_ASSERT(SourcePtr >= SourceString);
+                        *IndexOf = (LONG)((SourcePtr - SourceString) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternPtr >= PatternString);
-                    FLT_ASSERT(PatternPtr < (PatternString + PatternLength));
+                    FLT_ASSERT(SourcePtr >= SourceString);
+                    FLT_ASSERT(SourcePtr < (SourceString + SourceLength));
                 }
             } while (1);
         }
         else if (TargetStringIsUpcase) {
             // Target string is upcase already.
             do {
-                PatternChar = __InlineUpcaseUnicodeChar(*PatternPtr);
-                TargetChar  = *TargetPtr;
-                if (TargetChar != PatternChar) {
+                SourceChar = __InlineUpcaseUnicodeChar(*SourcePtr);
+                TargetChar = *TargetPtr;
+                if (TargetChar != SourceChar) {
                     Status = STATUS_NOT_FOUND;
                     break;
                 }
                 else {
-                    PatternPtr--;
+                    SourcePtr--;
                     TargetPtr--;
                     if (TargetPtr <= TargetString) {
-                        FLT_ASSERT(PatternPtr >= PatternString);
-                        *IndexOf = (LONG)((PatternPtr - PatternString) * sizeof(WCHAR));
+                        FLT_ASSERT(SourcePtr >= SourceString);
+                        *IndexOf = (LONG)((SourcePtr - SourceString) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternPtr >= PatternString);
-                    FLT_ASSERT(PatternPtr < (PatternString + PatternLength));
+                    FLT_ASSERT(SourcePtr >= SourceString);
+                    FLT_ASSERT(SourcePtr < (SourceString + SourceLength));
                 }
             } while (1);
         }
         else {
             // String compare is case insensitive, CaseInSensitive is TRUE.
             do {
-                PatternChar = __InlineUpcaseUnicodeChar(*PatternPtr);
-                TargetChar  = __InlineUpcaseUnicodeChar(*TargetPtr);
-                if (TargetChar != PatternChar) {
+                SourceChar = __InlineUpcaseUnicodeChar(*SourcePtr);
+                TargetChar = __InlineUpcaseUnicodeChar(*TargetPtr);
+                if (TargetChar != SourceChar) {
                     Status = STATUS_NOT_FOUND;
                     break;
                 }
                 else {
-                    PatternPtr--;
+                    SourcePtr--;
                     TargetPtr--;
                     if (TargetPtr <= TargetString) {
-                        FLT_ASSERT(PatternPtr >= PatternString);
-                        *IndexOf = (LONG)((PatternPtr - PatternString) * sizeof(WCHAR));
+                        FLT_ASSERT(SourcePtr >= SourceString);
+                        *IndexOf = (LONG)((SourcePtr - SourceString) * sizeof(WCHAR));
                         Status = STATUS_SUCCESS;
                         break;
                     }
-                    FLT_ASSERT(PatternPtr >= PatternString);
-                    FLT_ASSERT(PatternPtr < (PatternString + PatternLength));
+                    FLT_ASSERT(SourcePtr >= SourceString);
+                    FLT_ASSERT(SourcePtr < (SourceString + SourceLength));
                 }
             } while (1);
         }
